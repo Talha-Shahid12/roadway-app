@@ -4,6 +4,7 @@ import 'package:roadway/routes/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../services/ApiCalls.dart'; // Import your API service
+import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -137,8 +138,8 @@ class _LoginScreenState extends State<LoginScreen>
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -171,8 +172,8 @@ class _LoginScreenState extends State<LoginScreen>
             Expanded(
               child: Text(
                 "Login Successful!",
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -261,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen>
             end: Alignment.bottomRight,
             colors: [
               AppColors.primary.withOpacity(0.1),
-              Colors.white,
+              const Color.fromARGB(255, 146, 147, 204),
               AppColors.primary.withOpacity(0.05),
             ],
             stops: const [0.0, 0.5, 1.0],
@@ -284,40 +285,13 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // App Logo with glowing effect
                         Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 32.w,
-                              vertical: 16.h,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  spreadRadius: 0,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary.withOpacity(0.1),
-                                  Colors.white.withOpacity(0.8),
-                                ],
-                              ),
-                            ),
-                            child: Text(
-                              "Roadway",
-                              style: AppTextStyles.headline1.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
+                          child: Image.asset(
+                            'assets/images/icon.png',
+                            width: 500.w,
+                            height: 100.h,
+                            fit: BoxFit.cover,
                           ),
                         ),
-
                         SizedBox(height: 50.h),
 
                         // Welcome text with subtle animation
@@ -340,32 +314,32 @@ class _LoginScreenState extends State<LoginScreen>
                               Row(
                                 children: [
                                   Text(
-                                    "Welcome Back ",
+                                    "Welcome Back 👋",
                                     style: AppTextStyles.headline1.copyWith(
-                                      fontSize: 20.sp,
+                                      fontSize: 18.sp,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  TweenAnimationBuilder<double>(
-                                    duration:
-                                        const Duration(milliseconds: 2000),
-                                    tween: Tween(begin: 0.8, end: 1.2),
-                                    curve: Curves.elasticOut,
-                                    builder: (context, scale, child) {
-                                      return Transform.scale(
-                                        scale: scale,
-                                        child: const Text("👋",
-                                            style: TextStyle(fontSize: 28)),
-                                      );
-                                    },
-                                  ),
+                                  // TweenAnimationBuilder<double>(
+                                  //   duration:
+                                  //       const Duration(milliseconds: 2000),
+                                  //   tween: Tween(begin: 0.8, end: 1.2),
+                                  //   curve: Curves.elasticOut,
+                                  //   builder: (context, scale, child) {
+                                  //     return Transform.scale(
+                                  //       scale: scale,
+                                  //       child: const Text("👋",
+                                  //           style: TextStyle(fontSize: 28)),
+                                  //     );
+                                  //   },
+                                  // ),
                                 ],
                               ),
                               SizedBox(height: 8.h),
                               Text(
                                 "Login to continue your journey",
                                 style: AppTextStyles.body.copyWith(
-                                  color: Colors.grey[600],
+                                  color: const Color.fromARGB(255, 63, 58, 58),
                                   fontSize: 14.sp,
                                 ),
                               ),
@@ -440,11 +414,11 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               child: Text(
                                 "Forgot Password?",
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   color: _isLoading
                                       ? Colors.grey[400]
                                       : AppColors.primary,
-                                  fontSize: 14.sp,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w500,
                                   decoration: TextDecoration.underline,
                                   decorationColor: _isLoading
@@ -476,9 +450,10 @@ class _LoginScreenState extends State<LoginScreen>
                               padding: EdgeInsets.symmetric(horizontal: 16.w),
                               child: Text(
                                 "OR",
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 14.sp,
+                                style: GoogleFonts.poppins(
+                                  color:
+                                      const Color.fromARGB(255, 251, 246, 246),
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -537,8 +512,8 @@ class _LoginScreenState extends State<LoginScreen>
                               children: [
                                 Text(
                                   "Don't have an account? ",
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.sp,
                                     color: Colors.grey[600],
                                   ),
                                 ),
@@ -551,12 +526,12 @@ class _LoginScreenState extends State<LoginScreen>
                                         },
                                   child: Text(
                                     "Sign Up",
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       color: _isLoading
                                           ? Colors.grey[400]
                                           : AppColors.primary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 15.sp,
+                                      fontSize: 12.sp,
                                       decoration: TextDecoration.underline,
                                       decorationColor: _isLoading
                                           ? Colors.grey[400]
@@ -625,20 +600,20 @@ class _LoginScreenState extends State<LoginScreen>
           enabled: enabled,
           validator: validator,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          style: TextStyle(
-            fontSize: 16.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 13.sp,
             fontWeight: FontWeight.w500,
             color: enabled ? Colors.black : Colors.grey[500],
           ),
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: TextStyle(
+            labelStyle: GoogleFonts.poppins(
               color: isFocused
                   ? AppColors.primary
                   : enabled
                       ? Colors.grey[500]
                       : Colors.grey[400],
-              fontSize: 16.sp,
+              fontSize: 13.sp,
             ),
             prefixIcon: Icon(
               icon,
@@ -698,8 +673,8 @@ class _LoginScreenState extends State<LoginScreen>
               horizontal: 20.w,
               vertical: 18.h,
             ),
-            errorStyle: TextStyle(
-              fontSize: 12.sp,
+            errorStyle: GoogleFonts.poppins(
+              fontSize: 10.sp,
               color: Colors.red[600],
             ),
           ),
@@ -760,9 +735,9 @@ class _LoginScreenState extends State<LoginScreen>
                       SizedBox(width: 12.w),
                       Text(
                         "Signing In...",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 16.sp,
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -772,10 +747,10 @@ class _LoginScreenState extends State<LoginScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "Login",
-                        style: TextStyle(
+                        "Login Now",
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 18.sp,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
@@ -836,8 +811,8 @@ class _LoginScreenState extends State<LoginScreen>
               SizedBox(width: 8.w),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 15.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w600,
                   color: _isLoading ? Colors.grey[400] : Colors.grey[700],
                 ),

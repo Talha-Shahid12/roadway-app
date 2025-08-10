@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_theme.dart';
+import 'screens/splash_screen.dart'; // Add this import
 
 void main() {
   runApp(const RoadwayApp());
@@ -19,7 +20,7 @@ class RoadwayApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Roadway',
           theme: AppTheme.lightTheme,
-          initialRoute: AppRoutes.login,
+          initialRoute: AppRoutes.splash, // Change from login to splash
           routes: AppRoutes.routes,
         );
       },

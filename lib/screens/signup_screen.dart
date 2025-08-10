@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/custom_button.dart';
 import '../Services/ApiCalls.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -215,7 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                   ),
                   child: Text(
                     'Go to Login',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
                     ),
@@ -244,7 +245,7 @@ class _SignUpScreenState extends State<SignUpScreen>
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                 ),
@@ -284,7 +285,7 @@ class _SignUpScreenState extends State<SignUpScreen>
             end: Alignment.bottomRight,
             colors: [
               AppColors.primary.withOpacity(0.1),
-              Colors.white,
+              const Color.fromARGB(255, 146, 147, 204),
               AppColors.primary.withOpacity(0.05),
             ],
             stops: const [0.0, 0.5, 1.0],
@@ -336,7 +337,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   Text(
                                     "Create Account",
                                     style: AppTextStyles.headline1.copyWith(
-                                      color: AppColors.primary,
+                                      color: const Color.fromARGB(
+                                          255, 90, 132, 230),
                                       fontSize: 28.sp,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.5,
@@ -550,7 +552,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: TextStyle(
+                                  style: GoogleFonts.poppins(
                                     fontSize: 14.sp,
                                     color: Colors.grey[600],
                                   ),
@@ -558,7 +560,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                                     const TextSpan(text: "I agree to the "),
                                     TextSpan(
                                       text: "Terms of Service",
-                                      style: TextStyle(
+                                      style: GoogleFonts.poppins(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w600,
                                         decoration: TextDecoration.underline,
@@ -567,7 +569,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                                     const TextSpan(text: " and "),
                                     TextSpan(
                                       text: "Privacy Policy",
-                                      style: TextStyle(
+                                      style: GoogleFonts.poppins(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w600,
                                         decoration: TextDecoration.underline,
@@ -601,7 +603,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                             padding: EdgeInsets.symmetric(horizontal: 16.w),
                             child: Text(
                               "OR",
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 color: Colors.grey[500],
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
@@ -662,7 +664,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                             children: [
                               Text(
                                 "Already have an account? ",
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   fontSize: 15.sp,
                                   color: Colors.grey[600],
                                 ),
@@ -673,7 +675,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 },
                                 child: Text(
                                   "Login",
-                                  style: TextStyle(
+                                  style: GoogleFonts.poppins(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15.sp,
@@ -737,13 +739,13 @@ class _SignUpScreenState extends State<SignUpScreen>
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontSize: 16.sp,
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: TextStyle(
+            labelStyle: GoogleFonts.poppins(
               color: isFocused ? AppColors.primary : Colors.grey[500],
               fontSize: 16.sp,
             ),
@@ -815,7 +817,7 @@ class _SignUpScreenState extends State<SignUpScreen>
             SizedBox(height: 4.h),
             Text(
               value,
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 12.sp,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: isSelected ? AppColors.primary : Colors.grey[600],
@@ -883,7 +885,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                     children: [
                       Text(
                         "Create Account",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
@@ -944,7 +946,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               SizedBox(width: 8.w),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[700],

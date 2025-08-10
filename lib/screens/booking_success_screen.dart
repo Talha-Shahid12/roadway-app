@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:open_file/open_file.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BookingSuccessScreen extends StatelessWidget {
   const BookingSuccessScreen({super.key});
@@ -64,9 +65,9 @@ class BookingSuccessScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           "Thank You",
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 20.sp,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -133,8 +134,8 @@ class BookingSuccessScreen extends StatelessWidget {
                     SizedBox(height: 12.h),
                     Text(
                       "Booking Confirmed!",
-                      style: TextStyle(
-                        fontSize: 20.sp,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -142,8 +143,8 @@ class BookingSuccessScreen extends StatelessWidget {
                     SizedBox(height: 8.h),
                     Text(
                       "Your ticket has been booked successfully",
-                      style: TextStyle(
-                        fontSize: 14.sp,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.sp,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -179,7 +180,7 @@ class BookingSuccessScreen extends StatelessWidget {
                           SizedBox(height: 8.h),
                           Text(
                             ticketId,
-                            style: TextStyle(
+                            style: GoogleFonts.poppins(
                               fontSize: 12.sp,
                               color: Colors.grey[600],
                               letterSpacing: 1.2,
@@ -213,15 +214,15 @@ class BookingSuccessScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       busData?['pickupLocation'] ?? 'Unknown',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13.sp,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
                                       departureTime,
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.sp,
                                         color: Colors.grey[600],
                                       ),
                                     ),
@@ -238,7 +239,7 @@ class BookingSuccessScreen extends StatelessWidget {
                                   SizedBox(height: 4.h),
                                   Text(
                                     duration,
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 12.sp,
                                       color: Colors.grey[600],
                                     ),
@@ -251,15 +252,15 @@ class BookingSuccessScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       busData?['dropoffLocation'] ?? 'Unknown',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13.sp,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
                                       arrivalTime,
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.sp,
                                         color: Colors.grey[600],
                                       ),
                                     ),
@@ -310,7 +311,7 @@ class BookingSuccessScreen extends StatelessWidget {
                             SizedBox(height: 16.h),
                             Text(
                               "Seat Assignments:",
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 12.sp,
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.w500,
@@ -325,9 +326,9 @@ class BookingSuccessScreen extends StatelessWidget {
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            "Seat ${entry.key}:",
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
+                                            "Seat: ${entry.key}",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11.sp,
                                               color: Colors.grey[700],
                                             ),
                                           ),
@@ -351,7 +352,7 @@ class BookingSuccessScreen extends StatelessWidget {
                                             ),
                                             child: Text(
                                               entry.value.toUpperCase(),
-                                              style: TextStyle(
+                                              style: GoogleFonts.poppins(
                                                 fontSize: 10.sp,
                                                 color: entry.value == 'male'
                                                     ? Colors.blue[700]
@@ -386,9 +387,9 @@ class BookingSuccessScreen extends StatelessWidget {
                 child: Text(
                   "Booking Initiated — Please Pay To Confirm.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.red,
-                    fontSize: 12.sp,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -449,7 +450,7 @@ class BookingSuccessScreen extends StatelessWidget {
                       ),
                       label: Text(
                         "Home",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.orange,
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
@@ -482,8 +483,8 @@ class BookingSuccessScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 10.sp,
             color: Colors.grey[600],
             fontWeight: FontWeight.w500,
           ),
@@ -491,8 +492,8 @@ class BookingSuccessScreen extends StatelessWidget {
         SizedBox(height: 4.h),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 14.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 12.sp,
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
@@ -684,14 +685,15 @@ class BookingSuccessScreen extends StatelessWidget {
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 24.sp),
               SizedBox(width: 8.w),
-              Text("Success", style: TextStyle(fontSize: 18.sp)),
+              Text("Success", style: GoogleFonts.poppins(fontSize: 15.sp)),
             ],
           ),
-          content: Text(message, style: TextStyle(fontSize: 14.sp)),
+          content: Text(message, style: GoogleFonts.poppins(fontSize: 12.sp)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK", style: TextStyle(color: Colors.orange)),
+              child:
+                  Text("OK", style: GoogleFonts.poppins(color: Colors.orange)),
             ),
           ],
         );
@@ -708,14 +710,15 @@ class BookingSuccessScreen extends StatelessWidget {
             children: [
               Icon(Icons.error, color: Colors.red, size: 24.sp),
               SizedBox(width: 8.w),
-              Text("Error", style: TextStyle(fontSize: 18.sp)),
+              Text("Error", style: GoogleFonts.poppins(fontSize: 15.sp)),
             ],
           ),
-          content: Text(message, style: TextStyle(fontSize: 14.sp)),
+          content: Text(message, style: GoogleFonts.poppins(fontSize: 12.sp)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK", style: TextStyle(color: Colors.orange)),
+              child:
+                  Text("OK", style: GoogleFonts.poppins(color: Colors.orange)),
             ),
           ],
         );

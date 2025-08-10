@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:roadway/Services/StorageService.dart';
+import 'package:roadway/routes/app_routes.dart';
 import 'package:roadway/screens/booking_history_screen.dart';
-import '../Services/ApiCalls.dart'; // Import your API service
-// import '../theme/app_colors.dart';
+import 'package:roadway/widgets/custom_side_menu_bar.dart';
+// import 'package:roadway/models/route_data.dart'; // Import the centralized RouteData
+import '../Services/ApiCalls.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,16 +22,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final TextEditingController _toController = TextEditingController();
   DateTime? _selectedDate;
   int _selectedIndex = 0;
-  bool _isLoading = false; // Added loading state
-
+  bool _isLoading = false;
+  bool _isLoadingRecentSearches = true;
+  bool _isLoadingTopTrips = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Data lists
+  List<RouteData> _popularRoutes = [];
+  List<RouteData> _recentSearches = [];
+  List<RouteData> _topTrips = [];
+
   @override
   void initState() {
     super.initState();
-
     // Set status bar to transparent
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -35,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ));
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 0),
       vsync: this,
     );
 
@@ -56,6 +65,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ));
 
     _animationController.forward();
+
+    // Load data
+    _loadPopularRoutes();
+    _loadRecentSearches();
+    _loadTopTrips();
   }
 
   @override
@@ -66,6 +80,224 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Load top trips from API
+  Future<void> _loadTopTrips() async {
+    setState(() {
+      _isLoadingTopTrips = true;
+    });
+
+    try {
+      print('🚌 Loading top trips from API...');
+      final response = await ApiCalls.getTopTrips();
+
+      if (response.success && response.data != null) {
+        final topTripsRoutes =
+            response.data!.map((trip) => trip.toRouteData()).toList();
+
+        print('✅ Successfully loaded ${topTripsRoutes.length} top trips');
+
+        if (mounted) {
+          setState(() {
+            _topTrips = topTripsRoutes;
+            _isLoadingTopTrips = false;
+          });
+        }
+      } else {
+        print('❌ Failed to load top trips: ${response.message}');
+        _loadFallbackTopTrips();
+      }
+    } catch (e) {
+      print('❌ Error loading top trips: $e');
+      _loadFallbackTopTrips();
+    }
+  }
+
+  String _getTimeBasedGreeting() {
+    final hour = 12; //DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return "Good Morning ☀️";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good Afternoon 🌤️";
+    } else {
+      return "Good Evening 🌙";
+    }
+  }
+
+  // Fallback method with static data
+  void _loadFallbackTopTrips() {
+    if (mounted) {
+      setState(() {
+        _topTrips = [
+          RouteData(
+            from: "Lahore",
+            to: "Peshawar",
+            price: "PKR 3,000",
+            duration: "12h 0m",
+          ),
+          RouteData(
+            from: "Lahore",
+            to: "Karachi",
+            price: "PKR 1,100",
+            duration: "8h 0m",
+          ),
+          RouteData(
+            from: "Multan",
+            to: "Lahore",
+            price: "PKR 1,300",
+            duration: "13h 0m",
+          ),
+          RouteData(
+            from: "Lahore",
+            to: "Faisalabad",
+            price: "PKR 1,550",
+            duration: "14h 0m",
+          ),
+        ];
+        _isLoadingTopTrips = false;
+      });
+    }
+  }
+
+  // Load popular routes
+  void _loadPopularRoutes() {
+    setState(() {
+      _popularRoutes = [
+        RouteData(
+          from: "Karachi",
+          to: "Lahore",
+          price: "PKR 1,500",
+          duration: "8h 30m",
+        ),
+        RouteData(
+          from: "Lahore",
+          to: "Islamabad",
+          price: "PKR 1,200",
+          duration: "4h 45m",
+        ),
+        RouteData(
+          from: "Karachi",
+          to: "Multan",
+          price: "PKR 1,800",
+          duration: "6h 15m",
+        ),
+        RouteData(
+          from: "Faisalabad",
+          to: "Rawalpindi",
+          price: "PKR 1,000",
+          duration: "3h 20m",
+        ),
+      ];
+    });
+  }
+
+  // Load recent searches from storage
+  Future<void> _loadRecentSearches() async {
+    setState(() {
+      _isLoadingRecentSearches = true;
+    });
+    try {
+      final recentSearches = await StorageService.getRecentSearches();
+      print('📱 Loaded ${recentSearches.length} recent searches from storage');
+      if (mounted) {
+        setState(() {
+          _recentSearches = recentSearches;
+          _isLoadingRecentSearches = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading recent searches: $e');
+      if (mounted) {
+        setState(() {
+          _recentSearches = [];
+          _isLoadingRecentSearches = false;
+        });
+      }
+    }
+  }
+
+  // Save search to recent searches
+  Future<void> _saveToRecentSearches(
+      String from, String to, DateTime date) async {
+    try {
+      final newSearch = RouteData.forRecentSearch(
+        from: from,
+        to: to,
+        searchDate: date,
+      );
+      await StorageService.addRecentSearch(newSearch);
+      print('💾 Saved recent search: $from → $to');
+      await _loadRecentSearches();
+    } catch (e) {
+      print('❌ Error saving recent search: $e');
+    }
+  }
+
+  // Clear all recent searches
+  Future<void> _clearRecentSearches() async {
+    try {
+      await StorageService.clearRecentSearches();
+      await _loadRecentSearches();
+      _showSuccessDialog('Recent searches cleared successfully!');
+    } catch (e) {
+      print('❌ Error clearing recent searches: $e');
+      _showErrorDialog('Failed to clear recent searches');
+    }
+  }
+
+  // Navigate to bus list with route data
+  Future<void> _navigateWithRouteData(RouteData route,
+      {DateTime? customDate}) async {
+    final searchDate = customDate ??
+        route.searchDate ??
+        DateTime.now().add(const Duration(days: 1));
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final formattedDate = DateFormat('yyyy-MM-dd').format(searchDate);
+      print('🔍 Searching for: ${route.from} → ${route.to} on $formattedDate');
+
+      final response = await ApiCalls.searchSlots(
+        from: route.from,
+        to: route.to,
+        dateInput: formattedDate,
+      );
+
+      if (response.success && response.data != null) {
+        _showSuccessDialog('Search completed successfully!');
+        await _saveToRecentSearches(route.from, route.to, searchDate);
+        Navigator.pushNamed(
+          context,
+          '/busList',
+          arguments: {
+            'searchResults': response.data,
+            'searchParams': {
+              'from': route.from,
+              'to': route.to,
+              'date': searchDate,
+              'formattedDate': formattedDate,
+            }
+          },
+        );
+      } else {
+        _showErrorDialog(response.message);
+      }
+    } catch (e) {
+      print('❌ Unexpected error during search: $e');
+      _showErrorDialog(
+          'An unexpected error occurred. Please check your internet connection and try again.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   // Validation function for search form
   String? _validateSearchForm() {
     final from = _fromController.text.trim();
@@ -74,19 +306,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (from.isEmpty) {
       return 'Please enter departure location';
     }
-
     if (to.isEmpty) {
       return 'Please enter destination location';
     }
-
     if (from.toLowerCase() == to.toLowerCase()) {
       return 'Departure and destination cannot be the same';
     }
-
     if (_selectedDate == null) {
       return 'Please select a travel date';
     }
-
     return null;
   }
 
@@ -105,8 +333,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -139,8 +367,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -160,45 +388,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Handle search function
   Future<void> _handleSearch() async {
-    // Validate form
     final validationError = _validateSearchForm();
     if (validationError != null) {
       _showErrorDialog(validationError);
       return;
     }
 
-    // Hide keyboard
     FocusScope.of(context).unfocus();
 
-    // Set loading state
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Format date for API (assuming API expects YYYY-MM-DD format)
       final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      print(
+          '🔍 Manual search: ${_fromController.text.trim()} → ${_toController.text.trim()} on $formattedDate');
 
-      // You might need to get token from secure storage if required
-      // String? token = await getStoredToken(); // Implement this if needed
-
-      // Make API call
       final response = await ApiCalls.searchSlots(
         from: _fromController.text.trim(),
         to: _toController.text.trim(),
         dateInput: formattedDate,
-        // token: token, // Include if your API requires authentication
       );
 
-      // Handle response
       if (response.success && response.data != null) {
-        // Check response code from API
-
         _showSuccessDialog('Search completed successfully!');
-        print(
-            "Here are the Slots data : ${response.data}"); // You can print the data here
-        // Navigate to bus list screen with search results
-        // You can pass the search results and search parameters
+        print("Here are the Slots data : ${response.data}");
+
+        await _saveToRecentSearches(
+          _fromController.text.trim(),
+          _toController.text.trim(),
+          _selectedDate!,
+        );
+
         Navigator.pushNamed(
           context,
           '/busList',
@@ -213,16 +435,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           },
         );
       } else {
-        // Handle API error
         _showErrorDialog(response.message);
       }
     } catch (e) {
-      // Handle unexpected errors
       print('❌ Unexpected error during search: $e');
       _showErrorDialog(
           'An unexpected error occurred. Please check your internet connection and try again.');
     } finally {
-      // Reset loading state
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -233,54 +452,311 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final bool showGlobalLoader =
+        _isLoading || _isLoadingRecentSearches || _isLoadingTopTrips;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FFFE),
-      // Remove extendBodyBehindAppBar if you had it
-      body: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          SizedBox(height: 12.h),
-                          _buildSearchCard(),
-                          SizedBox(height: 20.h),
-                          _buildSectionTitle("Popular Routes"),
-                          _buildRoutesSection(),
-                          SizedBox(height: 16.h),
-                          _buildSectionTitle("Recent Searches"),
-                          _buildRoutesSection(),
-                          SizedBox(height: 60.h),
-                        ],
+      drawer: CustomSideMenuBar(
+        onItemSelected: (index) {
+          print('Menu item selected: $index');
+        },
+      ),
+      body: Stack(
+        // Use Stack to layer content and the loader
+        children: [
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              SizedBox(height: 12.h),
+                              _buildSearchCard(),
+                              SizedBox(height: 20.h),
+                              _buildSectionTitle("Top Trips"),
+                              _buildTopTripsSection(),
+                              SizedBox(height: 16.h),
+                              _buildRecentSearchesSection(),
+                              SizedBox(height: 60.h),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
+              );
+            },
+          ),
+          if (showGlobalLoader) // Conditionally display the loader overlay
+            Positioned.fill(
+              child: Container(
+                color: const Color.fromARGB(255, 255, 255, 255)
+                    .withOpacity(0.5), // Semi-transparent background
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/loader1.gif',
+                    width: 100.w,
+                    height: 100.h,
+                  ),
+                ),
               ),
             ),
-          );
-        },
+        ],
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
+  // Build top trips section
+  Widget _buildTopTripsSection() {
+    // Remove individual loader for this section as we have a global one
+    if (_topTrips.isEmpty && !_isLoadingTopTrips) {
+      // Only show "No top trips" if not loading
+      return SizedBox(
+        height: 120.h,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.directions_bus_rounded,
+                size: 32.sp,
+                color: Colors.grey[400],
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                "No top trips available",
+                style: GoogleFonts.poppins(
+                  fontSize: 14.sp,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    // If loading, the global loader will cover this.
+    // If not loading and not empty, display the list.
+    if (_topTrips.isNotEmpty) {
+      return SizedBox(
+        height: 120.h,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          itemCount: _topTrips.length,
+          itemBuilder: (context, index) {
+            final route = _topTrips[index];
+            return GestureDetector(
+              onTap: () async {
+                DateTime now = DateTime.now();
+                DateTime tomorrow = now.add(const Duration(days: 1));
+                DateTime oneWeekLater = now.add(const Duration(days: 7));
+                DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: tomorrow,
+                  firstDate: tomorrow,
+                  lastDate: oneWeekLater,
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(
+                          primary: const Color(0xFF6C63FF),
+                          onPrimary: Colors.white,
+                          surface: Colors.white,
+                          onSurface: Colors.black,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (pickedDate != null) {
+                  _navigateWithRouteData(route, customDate: pickedDate);
+                }
+              },
+              child: Container(
+                width: 180.w,
+                height: 120.h,
+                margin: EdgeInsets.only(right: 16.w),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50.w,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            const Color(0xFFFF6B6B).withOpacity(0.8),
+                            const Color(0xFFFF8E8E).withOpacity(0.6),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(16.r),
+                          bottomLeft: Radius.circular(16.r),
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.trending_up_rounded,
+                          color: Colors.white,
+                          size: 24.sp,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${route.from} → ${route.to}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF2D3748),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 6.h),
+                            Text(
+                              route.price,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFFF6B6B),
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 6.w, vertical: 2.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF6B6B).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: Text(
+                                route.duration,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 8.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFFFF6B6B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+    return const SizedBox.shrink(); // Return empty widget if loading or empty
+  }
+
+  // Enhanced recent searches section with loading state
+  Widget _buildRecentSearchesSection() {
+    // Remove individual loader for this section as we have a global one
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Recent Searches",
+                style: GoogleFonts.poppins(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D3748),
+                ),
+              ),
+              if (_recentSearches.isNotEmpty && !_isLoadingRecentSearches)
+                GestureDetector(
+                  onTap: _clearRecentSearches,
+                  child: Text(
+                    "Clear All",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red[600],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (_recentSearches.isNotEmpty && !_isLoadingRecentSearches)
+          _buildRoutesSection(_recentSearches, isPopular: false)
+        else if (_recentSearches.isEmpty &&
+            !_isLoadingRecentSearches) // Only show "No recent searches" if not loading
+          SizedBox(
+            height: 120.h,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.history_rounded,
+                    size: 32.sp,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    "No recent searches",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          const SizedBox.shrink(), // Return empty widget if loading
+      ],
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
-      // Add top padding to account for status bar
       padding: EdgeInsets.only(
         left: 24.w,
         right: 24.w,
-        top: MediaQuery.of(context).padding.top +
-            16.h, // Status bar height + extra padding
+        top: MediaQuery.of(context).padding.top + 16.h,
         bottom: 32.h,
       ),
       decoration: BoxDecoration(
@@ -305,28 +781,55 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Hi, Talha! 👋",
-                    style: TextStyle(
+              // Add drawer button on the left
+              // In your _buildHeader method, replace the GestureDetector with:
+              Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () => Scaffold.of(context).openDrawer(),
+                  child: Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.menu_rounded,
                       color: Colors.white,
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w600,
+                      size: 24.sp,
                     ),
                   ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    "Book your next journey",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+                ),
               ),
+              // Center content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      _getTimeBasedGreeting(),
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      "Book your next journey",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Notification button on the right
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
@@ -376,9 +879,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             Text(
               "Locations",
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 18.sp,
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -391,7 +894,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             SizedBox(height: 16.h),
             _buildDatePicker(),
             SizedBox(height: 24.h),
-            // Enhanced Search Button with loading state
             _buildSearchButton(),
           ],
         ),
@@ -399,7 +901,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // New enhanced search button with loading state
   Widget _buildSearchButton() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -425,50 +926,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(16.r),
           onTap: _isLoading ? null : _handleSearch,
           child: Center(
-            child: _isLoading
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20.w,
-                        height: 20.h,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            const Color(0xFF9C88FF),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Text(
-                        "Searching...",
-                        style: TextStyle(
-                          color: const Color(0xFF9C88FF),
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.search_rounded,
-                        color: const Color(0xFF9C88FF),
-                        size: 24.sp,
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        "Search",
-                        style: TextStyle(
-                          color: const Color(0xFF9C88FF),
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_rounded,
+                  color: const Color(0xFF9C88FF),
+                  size: 24.sp,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  "Search",
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF9C88FF),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -488,10 +964,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       child: TextField(
         controller: controller,
-        enabled: !_isLoading, // Disable when loading
-        style: TextStyle(
+        enabled: !_isLoading,
+        style: GoogleFonts.poppins(
           color: Colors.white,
-          fontSize: 16.sp,
+          fontSize: 13.sp,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
@@ -509,9 +985,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           hintText: hint,
-          hintStyle: TextStyle(
+          hintStyle: GoogleFonts.poppins(
             color: Colors.white.withOpacity(0.8),
-            fontSize: 16.sp,
+            fontSize: 13.sp,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16.r),
@@ -536,14 +1012,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       child: TextField(
         readOnly: true,
-        enabled: !_isLoading, // Disable when loading
+        enabled: !_isLoading,
         onTap: _isLoading
             ? null
             : () async {
                 DateTime now = DateTime.now();
                 DateTime tomorrow = now.add(const Duration(days: 1));
                 DateTime oneWeekLater = now.add(const Duration(days: 7));
-
                 DateTime? pickedDate = await showDatePicker(
                   context: context,
                   initialDate: tomorrow,
@@ -569,9 +1044,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   });
                 }
               },
-        style: TextStyle(
+        style: GoogleFonts.poppins(
           color: Colors.white,
-          fontSize: 16.sp,
+          fontSize: 13.sp,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
@@ -591,9 +1066,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           hintText: _selectedDate != null
               ? DateFormat("MMM dd, yyyy").format(_selectedDate!)
               : "Select Date",
-          hintStyle: TextStyle(
+          hintStyle: GoogleFonts.poppins(
             color: Colors.white.withOpacity(0.8),
-            fontSize: 16.sp,
+            fontSize: 13.sp,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16.r),
@@ -614,150 +1089,171 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 20.sp,
+            style: GoogleFonts.poppins(
+              fontSize: 18.sp,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF2D3748),
             ),
           ),
-          // Text(
-          //   "View all",
-          //   style: TextStyle(
-          //     fontSize: 14.sp,
-          //     fontWeight: FontWeight.w500,
-          //     color: const Color(0xFF6C63FF),
-          //   ),
-          // ),
         ],
       ),
     );
   }
 
-  Widget _buildRoutesSection() {
+  Widget _buildRoutesSection(List<RouteData> routes,
+      {required bool isPopular}) {
+    if (routes.isEmpty) {
+      return SizedBox(
+        height: 120.h,
+        child: Center(
+          child: Text(
+            isPopular ? "No popular routes available" : "No recent searches",
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 120.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 20.w),
-        itemCount: 4,
+        itemCount: routes.length,
         itemBuilder: (context, index) {
-          final routes = [
-            {
-              "from": "Karachi",
-              "to": "Lahore",
-              "price": "PKR 1,500",
-              "duration": "8h 30m"
+          final route = routes[index];
+          return GestureDetector(
+            onTap: () async {
+              if (isPopular) {
+                DateTime now = DateTime.now();
+                DateTime tomorrow = now.add(const Duration(days: 1));
+                DateTime oneWeekLater = now.add(const Duration(days: 7));
+                DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: tomorrow,
+                  firstDate: tomorrow,
+                  lastDate: oneWeekLater,
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(
+                          primary: const Color(0xFF6C63FF),
+                          onPrimary: Colors.white,
+                          surface: Colors.white,
+                          onSurface: Colors.black,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (pickedDate != null) {
+                  _navigateWithRouteData(route, customDate: pickedDate);
+                }
+              } else {
+                final searchDate = route.searchDate ??
+                    DateTime.now().add(const Duration(days: 1));
+                _navigateWithRouteData(route, customDate: searchDate);
+              }
             },
-            {
-              "from": "Lahore",
-              "to": "Islamabad",
-              "price": "PKR 1,200",
-              "duration": "4h 45m"
-            },
-            {
-              "from": "Karachi",
-              "to": "Multan",
-              "price": "PKR 1,800",
-              "duration": "6h 15m"
-            },
-            {
-              "from": "Faisalabad",
-              "to": "Rawalpindi",
-              "price": "PKR 1,000",
-              "duration": "3h 20m"
-            },
-          ];
-
-          return Container(
-            width: 180.w,
-            height: 120.h,
-            margin: EdgeInsets.only(right: 16.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50.w,
-                  height: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF6C63FF).withOpacity(0.8),
-                        const Color(0xFF9C88FF).withOpacity(0.6),
-                      ],
+            child: Container(
+              width: 180.w,
+              height: 120.h,
+              margin: EdgeInsets.only(right: 16.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50.w,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFF6C63FF).withOpacity(0.8),
+                          const Color(0xFF9C88FF).withOpacity(0.6),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16.r),
+                        bottomLeft: Radius.circular(16.r),
+                      ),
                     ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16.r),
-                      bottomLeft: Radius.circular(16.r),
+                    child: Center(
+                      child: Icon(
+                        isPopular
+                            ? Icons.directions_bus_rounded
+                            : Icons.history_rounded,
+                        color: Colors.white,
+                        size: 24.sp,
+                      ),
                     ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.directions_bus_rounded,
-                      color: Colors.white,
-                      size: 24.sp,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.all(10.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${routes[index]["from"]} → ${routes[index]["to"]}",
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2D3748),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 6.h),
-                        Text(
-                          "${routes[index]["price"]}",
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFFFF6B6B),
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 6.w, vertical: 2.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6C63FF).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                          child: Text(
-                            routes[index]["duration"]!,
-                            style: TextStyle(
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.all(10.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${route.from} → ${route.to}",
+                            style: GoogleFonts.poppins(
                               fontSize: 10.sp,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF6C63FF),
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF2D3748),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 6.h),
+                          Text(
+                            route.price,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: isPopular
+                                  ? const Color(0xFFFF6B6B)
+                                  : const Color(0xFF6C63FF),
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 6.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6.w, vertical: 2.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6C63FF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              route.duration,
+                              style: GoogleFonts.poppins(
+                                fontSize: 8.sp,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF6C63FF),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -771,12 +1267,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
       height: 70.h,
       decoration: BoxDecoration(
-        // gradient: LinearGradient(
-        //   colors: [
-        //     const Color(0xFF6C63FF).withOpacity(0.8),
-        //     const Color(0xFF9C88FF).withOpacity(0.6),
-        //   ],
-        // ),
         color: const Color(0xFF6C63FF).withOpacity(0.8),
         borderRadius: BorderRadius.circular(35.r),
         boxShadow: [
@@ -792,7 +1282,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           _bottomNavItem(Icons.home_rounded, 0),
           _bottomNavItem(Icons.confirmation_number_rounded, 1),
-          _bottomNavItem(Icons.person_rounded, 2),
+          _bottomNavItem(Icons.campaign_rounded, 2),
         ],
       ),
     );
@@ -805,23 +1295,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedIndex = index;
         });
-
-        // Navigate to BookingsHistoryScreen when middle icon (index 1) is clicked
         if (index == 1) {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => const BookingsHistoryScreen(),
             ),
           );
+        } else if (index == 2) {
+          Navigator.pushNamed(context, AppRoutes.announcements);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
         }
-        // Add other navigation logic here if needed
-        // if (index == 0) {
-        //   // Navigate to Home
-        // }
-        // if (index == 2) {
-        //   // Navigate to Profile
-        // }
       },
       child: Container(
         padding: EdgeInsets.all(12.w),

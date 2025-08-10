@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:roadway/Services/StorageService.dart';
 
 // Response Models
 class ApiResponse<T> {
@@ -555,9 +556,122 @@ class BookingRequest {
   }
 }
 
+class TopTripsResponse {
+  final bool success;
+  final String message;
+  final List<TopTripData>? data;
+
+  TopTripsResponse({
+    required this.success,
+    required this.message,
+    this.data,
+  });
+
+  factory TopTripsResponse.fromJson(Map<String, dynamic> json) {
+    return TopTripsResponse(
+      success: json['responseCode'] == '00',
+      message: json['responseMessage'] ?? 'Unknown error',
+      data: json['data'] != null
+          ? (json['data'] as List)
+              .map((item) => TopTripData.fromJson(item))
+              .toList()
+          : null,
+    );
+  }
+}
+
+class TopTripData {
+  final String id;
+  final String busNumber;
+  final String pickupLocation;
+  final String destination;
+  final String departureTime;
+  final String arrivalTime;
+  final int fare;
+  final DateTime createdAt;
+
+  TopTripData({
+    required this.id,
+    required this.busNumber,
+    required this.pickupLocation,
+    required this.destination,
+    required this.departureTime,
+    required this.arrivalTime,
+    required this.fare,
+    required this.createdAt,
+  });
+
+  factory TopTripData.fromJson(Map<String, dynamic> json) {
+    return TopTripData(
+      id: json['_id'] ?? '',
+      busNumber: json['busNumber'] ?? '',
+      pickupLocation: json['pickupLocation'] ?? '',
+      destination: json['destination'] ?? '',
+      departureTime: json['departureTime'] ?? '',
+      arrivalTime: json['arrivalTime'] ?? '',
+      fare: json['fare'] ?? 0,
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  // Convert to RouteData for compatibility with existing UI
+  RouteData toRouteData() {
+    return RouteData(
+      from: pickupLocation,
+      to: destination,
+      price: "PKR ${fare.toString()}",
+      duration: _calculateDuration(),
+    );
+  }
+
+  String _calculateDuration() {
+    try {
+      // Parse departure and arrival times
+      final depTime = _parseTime(departureTime);
+      final arrTime = _parseTime(arrivalTime);
+
+      // Calculate duration
+      Duration duration;
+      if (arrTime.isBefore(depTime)) {
+        // Next day arrival
+        duration = arrTime.add(Duration(days: 1)).difference(depTime);
+      } else {
+        duration = arrTime.difference(depTime);
+      }
+
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes % 60;
+
+      return "${hours}h ${minutes}m";
+    } catch (e) {
+      return "N/A";
+    }
+  }
+
+  DateTime _parseTime(String timeStr) {
+    // Parse time format like "03:00 PM"
+    final parts = timeStr.split(' ');
+    final timeParts = parts[0].split(':');
+    int hour = int.parse(timeParts[0]);
+    final minute = int.parse(timeParts[1]);
+
+    if (parts.length > 1 && parts[1].toUpperCase() == 'PM' && hour != 12) {
+      hour += 12;
+    } else if (parts.length > 1 &&
+        parts[1].toUpperCase() == 'AM' &&
+        hour == 12) {
+      hour = 0;
+    }
+
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, hour, minute);
+  }
+}
+
 // Main API Service Class
 class ApiCalls {
-  static const String baseUrl = "https://654db36775ed.ngrok-free.app";
+  static const String baseUrl = "https://c06814910c9e.ngrok-free.app";
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   // Headers
@@ -1053,6 +1167,93 @@ class ApiCalls {
     } catch (e) {
       print('❌ Create booking error: ${e.toString()}');
       return _handleException<BookingResponse>(e);
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchBookingHistory(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse(
+            '$baseUrl/api/bookings/getBookingHistory'), // Replace with your actual API endpoint
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('📥 Booking history response: $data');
+        return {
+          'success': true,
+          'data': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Failed to fetch bookings: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error: $e',
+      };
+    }
+  }
+
+  static Future<TopTripsResponse> getTopTrips() async {
+    try {
+      print('🚌 Fetching top trips from API...');
+
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/api/trip/getTopTrips'), // Replace with your actual endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any required headers like authorization tokens
+        },
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception(
+              'Request timeout. Please check your internet connection.');
+        },
+      );
+
+      print('📡 API Response Status: ${response.statusCode}');
+      print('📡 API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final topTripsResponse = TopTripsResponse.fromJson(jsonData);
+
+        if (topTripsResponse.success) {
+          print(
+              '✅ Successfully fetched ${topTripsResponse.data?.length ?? 0} top trips');
+          return topTripsResponse;
+        } else {
+          print('❌ API returned error: ${topTripsResponse.message}');
+          return TopTripsResponse(
+            success: false,
+            message: topTripsResponse.message,
+          );
+        }
+      } else {
+        print('❌ HTTP Error: ${response.statusCode}');
+        return TopTripsResponse(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('❌ Exception in getTopTrips: $e');
+      return TopTripsResponse(
+        success: false,
+        message: 'Network error: ${e.toString()}',
+      );
     }
   }
 }

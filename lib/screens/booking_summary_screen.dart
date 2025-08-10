@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 import '../Services/ApiCalls.dart'; // Import your API service
+import 'package:google_fonts/google_fonts.dart';
 
 class BookingSummaryScreen extends StatefulWidget {
   const BookingSummaryScreen({super.key});
@@ -51,8 +52,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -85,8 +86,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
             Expanded(
               child: Text(
                 "Booking Created Successfully!",
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -202,8 +203,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
       appBar: AppBar(
         title: Text(
           "Booking Summary",
-          style: TextStyle(
-            fontSize: 20.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -273,8 +274,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                                 children: [
                                   Text(
                                     busData['serviceName'] ?? 'Unknown Service',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 15.sp,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.grey[800],
                                     ),
@@ -282,8 +283,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                                   SizedBox(height: 4.h),
                                   Text(
                                     "Happy Journey",
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.sp,
                                       color: Colors.grey[600],
                                     ),
                                   ),
@@ -302,15 +303,15 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                                 children: [
                                   Text(
                                     busData['pickupLocation'] ?? 'Unknown',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.sp,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.grey[800],
                                     ),
                                   ),
                                   Text(
                                     busData['departureTime'] ?? 'Unknown',
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 12.sp,
                                       color: Colors.grey[600],
                                     ),
@@ -329,15 +330,15 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                                 children: [
                                   Text(
                                     busData['dropoffLocation'] ?? 'Unknown',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.sp,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.grey[800],
                                     ),
                                   ),
                                   Text(
                                     busData['arrivalTime'] ?? 'Unknown',
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 12.sp,
                                       color: Colors.grey[600],
                                     ),
@@ -380,8 +381,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                       children: [
                         Text(
                           "Trip Details",
-                          style: TextStyle(
-                            fontSize: 18.sp,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
                           ),
@@ -449,8 +450,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                       children: [
                         Text(
                           "Fare Breakdown",
-                          style: TextStyle(
-                            fontSize: 18.sp,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
                           ),
@@ -461,15 +462,15 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                           children: [
                             Text(
                               "Base Fare (${selectedSeats.length} seats)",
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
                                 color: Colors.grey[600],
                               ),
                             ),
                             Text(
                               "PKR ${totalAmount.toStringAsFixed(0)}",
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
                                 color: Colors.grey[800],
                               ),
                             ),
@@ -481,15 +482,15 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                           children: [
                             Text(
                               "Service Fee",
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
                                 color: Colors.grey[600],
                               ),
                             ),
                             Text(
                               "PKR ${(selectedSeats.length * 50).toStringAsFixed(0)}",
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
                                 color: Colors.grey[800],
                               ),
                             ),
@@ -503,16 +504,16 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                           children: [
                             Text(
                               "Total Amount",
-                              style: TextStyle(
-                                fontSize: 16.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.grey[800],
                               ),
                             ),
                             Text(
                               "PKR ${(totalAmount + (selectedSeats.length * 50)).toStringAsFixed(0)}",
-                              style: TextStyle(
-                                fontSize: 18.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
                               ),
@@ -606,9 +607,9 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                       SizedBox(width: 12.w),
                       Text(
                         "Processing...",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 16.sp,
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -625,8 +626,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                       SizedBox(width: 8.w),
                       Text(
                         "Confirm Booking - PKR ${(totalAmount + (selectedSeats.length * 50)).toStringAsFixed(0)}",
-                        style: TextStyle(
-                          fontSize: 16.sp,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -652,7 +653,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
           child: Icon(
             icon,
             color: iconColor,
-            size: 16.sp,
+            size: 18.sp,
           ),
         ),
         SizedBox(width: 12.w),
@@ -662,7 +663,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 12.sp,
                   color: Colors.grey[600],
                 ),
@@ -670,8 +671,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
               SizedBox(height: 2.h),
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                   color: Colors.grey[800],
                 ),

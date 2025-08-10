@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 import '../Services/ApiCalls.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BusDetailScreen extends StatefulWidget {
   const BusDetailScreen({super.key});
@@ -286,8 +287,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                   Expanded(
                     child: Text(
                       "Family Member?",
-                      style: TextStyle(
-                        fontSize: 20.sp,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF1A202C),
                       ),
@@ -299,8 +300,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 child: Text(
                   "The adjacent seat is booked by a person of opposite gender. Are you traveling as family members or relatives?",
-                  style: TextStyle(
-                    fontSize: 16.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.sp,
                     color: Colors.grey[600],
                     height: 1.5,
                   ),
@@ -315,9 +316,9 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                   ),
                   child: Text(
                     "No",
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Colors.grey[600],
-                      fontSize: 16.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -334,9 +335,9 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                   ),
                   child: Text(
                     "Yes, We're Family",
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 16.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -363,8 +364,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -439,9 +440,9 @@ class _BusDetailScreenState extends State<BusDetailScreen>
       appBar: AppBar(
         title: Text(
           "Select Your Seats",
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 20.sp,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -476,23 +477,15 @@ class _BusDetailScreenState extends State<BusDetailScreen>
         ),
       ),
       body: isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Loading seat information...",
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+          ? Container(
+              color: const Color.fromARGB(255, 174, 183, 193)
+                  .withOpacity(0.3), // Background opacity
+              child: Center(
+                child: Image.asset(
+                  'assets/images/loader1.gif',
+                  width: 150.w,
+                  height: 150.h,
+                ),
               ),
             )
           : errorMessage != null
@@ -516,8 +509,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                         errorMessage!.contains("Avaliable")
                             ? "Error"
                             : "Sorry", //688dd652fb525bb85362dc57
-                        style: TextStyle(
-                          fontSize: 24.sp,
+                        style: GoogleFonts.poppins(
+                          fontSize: 20.sp,
                           fontWeight: FontWeight.bold,
                           color: Colors.red[600],
                         ),
@@ -525,8 +518,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                       SizedBox(height: 8.h),
                       Text(
                         errorMessage!,
-                        style: TextStyle(
-                          fontSize: 16.sp,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.sp,
                           color: Colors.grey[600],
                         ),
                         textAlign: TextAlign.center,
@@ -550,9 +543,9 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                         ),
                         child: Text(
                           "Retry",
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             color: Colors.white,
-                            fontSize: 16.sp,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -586,16 +579,16 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                     children: [
                                       Text(
                                         "Departure",
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10.sp,
                                           color: Colors.grey[600],
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       Text(
                                         busData?['departureTime'] ?? "N/A",
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13.sp,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF1A202C),
                                         ),
@@ -621,16 +614,16 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                     children: [
                                       Text(
                                         "Arrival",
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10.sp,
                                           color: Colors.grey[600],
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       Text(
                                         busData?['arrivalTime'] ?? "N/A",
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13.sp,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF1A202C),
                                         ),
@@ -647,8 +640,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                           // Elegant Seat Legend
                           Text(
                             "Choose Your Seats",
-                            style: TextStyle(
-                              fontSize: 24.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF1A202C),
                               letterSpacing: -0.5,
@@ -659,8 +652,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
 
                           Text(
                             "Tap seats to cycle: Male → Female → Unselect",
-                            style: TextStyle(
-                              fontSize: 14.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.sp,
                               color: Colors.grey[600],
                               fontWeight: FontWeight.w500,
                             ),
@@ -854,8 +847,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                       SizedBox(width: 12.w),
                                       Text(
                                         "Selected Seats",
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 15.sp,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF2E7D32),
                                         ),
@@ -888,8 +881,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                             SizedBox(width: 8.w),
                                             Text(
                                               "Seat $seatNumber (${gender.toUpperCase()})",
-                                              style: TextStyle(
-                                                fontSize: 14.sp,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 10.sp,
                                                 color: const Color(0xFF2E7D32),
                                                 fontWeight: FontWeight.w500,
                                               ),
@@ -906,16 +899,16 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                     children: [
                                       Text(
                                         "${selectedSeats.length} seat(s)",
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.sp,
                                           color: const Color(0xFF388E3C),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       Text(
                                         "PKR ${(selectedSeats.length * baseFare).toStringAsFixed(0)}",
-                                        style: TextStyle(
-                                          fontSize: 20.sp,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 15.sp,
                                           fontWeight: FontWeight.w800,
                                           color: const Color(0xFF2E7D32),
                                         ),
@@ -987,8 +980,8 @@ class _BusDetailScreenState extends State<BusDetailScreen>
                                     selectedSeats.isEmpty
                                         ? "Select Seats to Continue"
                                         : "Continue to Booking",
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.sp,
                                       fontWeight: FontWeight.w700,
                                       color: selectedSeats.isNotEmpty
                                           ? Colors.white
@@ -1065,8 +1058,8 @@ class _SeatLegendItem extends StatelessWidget {
         SizedBox(height: 8.h),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 10.sp,
             fontWeight: FontWeight.w600,
             color: Colors.grey[700],
           ),

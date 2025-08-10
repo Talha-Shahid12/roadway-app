@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
@@ -9,6 +10,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:open_file/open_file.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:math';
+
+import 'package:roadway/Services/ApiCalls.dart';
+import 'package:roadway/routes/app_routes.dart';
+import 'package:roadway/screens/home_screen.dart';
 
 class BookingsHistoryScreen extends StatefulWidget {
   const BookingsHistoryScreen({super.key});
@@ -18,65 +24,156 @@ class BookingsHistoryScreen extends StatefulWidget {
 }
 
 class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
-  // Sample booking data - In real app, this would come from API/Database
-  final List<BookingModel> bookings = [
-    BookingModel(
-      ticketId: "TKT123456789",
-      passenger: "Talha Shahid",
-      route: "Lahore → Islamabad",
-      date: "2025-08-05",
-      time: "07:00 AM",
-      arrivalTime: "11:30 AM",
-      seats: "A1, A2",
-      fare: "PKR 3000",
-      busNumber: "LHR-ISB-001",
-      duration: "4h 30min",
-      status: BookingStatus.confirmed,
-      bookingDate: DateTime(2025, 8, 1),
-    ),
-    BookingModel(
-      ticketId: "TKT987654321",
-      passenger: "Talha Shahid",
-      route: "Islamabad → Karachi",
-      date: "2025-08-10",
-      time: "09:00 AM",
-      arrivalTime: "10:00 PM",
-      seats: "B5",
-      fare: "PKR 4500",
-      busNumber: "ISB-KHI-205",
-      duration: "13h 00min",
-      status: BookingStatus.confirmed,
-      bookingDate: DateTime(2025, 8, 3),
-    ),
-    BookingModel(
-      ticketId: "TKT456789123",
-      passenger: "Talha Shahid",
-      route: "Karachi → Lahore",
-      date: "2025-07-25",
-      time: "08:30 AM",
-      arrivalTime: "09:30 PM",
-      seats: "C3, C4",
-      fare: "PKR 4200",
-      busNumber: "KHI-LHR-102",
-      duration: "13h 00min",
-      status: BookingStatus.confirmed,
-      bookingDate: DateTime(2025, 7, 20),
-    ),
-    BookingModel(
-      ticketId: "TKT789123456",
-      passenger: "Talha Shahid",
-      route: "Lahore → Multan",
-      date: "2025-06-15",
-      time: "06:00 AM",
-      arrivalTime: "11:00 AM",
-      seats: "A7",
-      fare: "PKR 1800",
-      busNumber: "LHR-MLT-301",
-      duration: "5h 00min",
-      status: BookingStatus.pending,
-      bookingDate: DateTime(2025, 6, 10),
-    ),
-  ];
+  List<ApiBookingModel> bookings = [];
+  bool isLoading = true;
+  String? errorMessage;
+  int _selectedIndex = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookingHistory();
+  }
+
+  String? _calculateDuration(dynamic departureTime, dynamic arrivalTime) {
+    if (departureTime == null || arrivalTime == null) return null;
+
+    try {
+      DateTime? depTime;
+      DateTime? arrTime;
+
+      // Parse departure time
+      if (departureTime is String) {
+        depTime = _parseTimeString(departureTime.trim());
+      }
+
+      // Parse arrival time
+      if (arrivalTime is String) {
+        arrTime = _parseTimeString(arrivalTime.trim());
+      }
+
+      if (depTime != null && arrTime != null) {
+        // If arrival time is earlier than departure time, assume it's next day
+        if (arrTime.isBefore(depTime)) {
+          arrTime = arrTime.add(const Duration(days: 1));
+        }
+
+        Duration duration = arrTime.difference(depTime);
+        int hours = duration.inHours;
+        int minutes = duration.inMinutes.remainder(60);
+        return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+      }
+    } catch (e) {
+      print('⚠️ Error calculating duration: $e');
+      print('⚠️ Departure: $departureTime, Arrival: $arrivalTime');
+    }
+
+    return null;
+  }
+
+  DateTime? _parseTimeString(String timeString) {
+    try {
+      // Handle 12-hour format like "01:00 PM" or "09:00 AM"
+      if (timeString.toUpperCase().contains('AM') ||
+          timeString.toUpperCase().contains('PM')) {
+        bool isPM = timeString.toUpperCase().contains('PM');
+
+        // Remove AM/PM and clean the string
+        String cleanTime =
+            timeString.replaceAll(RegExp(r'[APap][Mm]'), '').trim();
+
+        if (cleanTime.contains(':')) {
+          final parts = cleanTime.split(':');
+          if (parts.length >= 2) {
+            // Clean up the parts to remove any non-numeric characters
+            String hourPart = parts[0].replaceAll(RegExp(r'[^0-9]'), '').trim();
+            String minutePart =
+                parts[1].replaceAll(RegExp(r'[^0-9]'), '').trim();
+
+            if (hourPart.isNotEmpty && minutePart.isNotEmpty) {
+              int hour = int.parse(hourPart);
+              int minute = int.parse(minutePart);
+
+              // Convert 12-hour to 24-hour format
+              if (isPM && hour != 12) {
+                hour += 12;
+              } else if (!isPM && hour == 12) {
+                hour = 0;
+              }
+
+              // Validate ranges
+              if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                return DateTime(2023, 1, 1, hour, minute);
+              }
+            }
+          }
+        }
+      }
+      // Handle 24-hour format like "13:00" or "01:30"
+      else if (timeString.contains(':')) {
+        final parts = timeString.split(':');
+        if (parts.length >= 2) {
+          String hourPart = parts[0].replaceAll(RegExp(r'[^0-9]'), '').trim();
+          String minutePart = parts[1].replaceAll(RegExp(r'[^0-9]'), '').trim();
+
+          if (hourPart.isNotEmpty && minutePart.isNotEmpty) {
+            int hour = int.parse(hourPart);
+            int minute = int.parse(minutePart);
+
+            if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+              return DateTime(2023, 1, 1, hour, minute);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error parsing time string: $timeString - $e');
+    }
+
+    return null;
+  }
+
+  Future<void> _fetchBookingHistory() async {
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
+      final result =
+          await ApiCalls.fetchBookingHistory('talhashahidarain1@gmail.com');
+
+      if (result['success']) {
+        final data = result['data'];
+
+        if (data['responseCode'] == '00') {
+          final List<dynamic> bookingsData = data['bookings'];
+          setState(() {
+            bookings = bookingsData
+                .map((booking) => ApiBookingModel.fromJson(booking))
+                .toList();
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            errorMessage =
+                data['responseMessage'] ?? 'Failed to fetch bookings';
+            isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          errorMessage = result['error'] ?? 'Failed to fetch bookings';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error: $e';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +197,14 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
             color: Colors.white,
             size: 20.sp,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            )
+          },
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -120,16 +224,90 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: Colors.white, size: 20.sp),
+            onPressed: _fetchBookingHistory,
+          ),
+        ],
       ),
-      body: bookings.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: EdgeInsets.all(16.w),
-              itemCount: bookings.length,
-              itemBuilder: (context, index) {
-                return _buildBookingCard(bookings[index]);
-              },
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isLoading) {
+      return Center(
+        child: Image.asset(
+          'assets/images/loader1.gif',
+          width: 100.w,
+          height: 100.h,
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (bookings.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.all(16.w),
+      itemCount: bookings.length,
+      itemBuilder: (context, index) {
+        return _buildBookingCard(bookings[index]);
+      },
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 80.sp,
+            color: Colors.red[400],
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            "Error loading bookings",
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
             ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            errorMessage ?? "Something went wrong",
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 20.h),
+          ElevatedButton(
+            onPressed: _fetchBookingHistory,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            child: Text(
+              "Retry",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -165,7 +343,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
     );
   }
 
-  Widget _buildBookingCard(BookingModel booking) {
+  Widget _buildBookingCard(ApiBookingModel booking) {
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
@@ -200,7 +378,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      booking.ticketId,
+                      "TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase() ?? 'N/A'}",
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
@@ -208,7 +386,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                       ),
                     ),
                     Text(
-                      "Booked on ${_formatDate(booking.bookingDate)}",
+                      "Booked on ${_formatDate(booking.createdAt)}",
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: Colors.grey[600],
@@ -248,14 +426,14 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            booking.route.split(' → ')[0],
+                            booking.pickupLocation,
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            booking.time,
+                            booking.departureTime,
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: Colors.grey[600],
@@ -273,7 +451,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          booking.duration,
+                          booking.busNumber,
                           style: TextStyle(
                             fontSize: 10.sp,
                             color: Colors.grey[600],
@@ -286,7 +464,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            booking.route.split(' → ')[1],
+                            booking.dropoffLocation,
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
@@ -311,10 +489,11 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildDetailItem("Date", booking.date),
+                      child: _buildDetailItem(
+                          "Date", _formatDate(booking.bookingDate)),
                     ),
                     Expanded(
-                      child: _buildDetailItem("Seats", booking.seats),
+                      child: _buildDetailItem("Seats", booking.seatsDisplay),
                     ),
                   ],
                 ),
@@ -327,7 +506,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                       child: _buildDetailItem("Bus No.", booking.busNumber),
                     ),
                     Expanded(
-                      child: _buildDetailItem("Fare", booking.fare),
+                      child: _buildDetailItem("Fare", "PKR ${booking.fare}"),
                     ),
                   ],
                 ),
@@ -335,7 +514,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                 SizedBox(height: 20.h),
 
                 // Action buttons
-                if (booking.status == BookingStatus.confirmed) ...[
+                if (booking.status == BookingStatus.Confirmed) ...[
                   Row(
                     children: [
                       Expanded(
@@ -390,62 +569,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                       ),
                     ],
                   ),
-                ] else if (booking.status == BookingStatus.confirmed) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showQRDialog(booking),
-                          icon: Icon(
-                            Icons.qr_code,
-                            color: Colors.grey,
-                            size: 18.sp,
-                          ),
-                          label: Text(
-                            "View QR",
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 10.h),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              _generateAndDownloadTicket(context, booking),
-                          icon: Icon(
-                            Icons.download,
-                            color: Colors.white,
-                            size: 18.sp,
-                          ),
-                          label: Text(
-                            "Download",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[600],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 10.h),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else if (booking.status == BookingStatus.pending) ...[
+                ] else if (booking.status == BookingStatus.Pending) ...[
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(vertical: 12.h),
@@ -500,9 +624,9 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
 
   Color _getStatusColor(BookingStatus status) {
     switch (status) {
-      case BookingStatus.confirmed:
+      case BookingStatus.Confirmed:
         return Colors.green;
-      case BookingStatus.pending:
+      case BookingStatus.Pending:
         return Colors.blue;
       default:
         return Colors.grey;
@@ -513,7 +637,26 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
     return "${date.day}/${date.month}/${date.year}";
   }
 
-  void _showQRDialog(BookingModel booking) {
+  String _formatDateForTicket(DateTime date) {
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return "${date.day} ${months[date.month]} ${date.year}";
+  }
+
+  void _showQRDialog(ApiBookingModel booking) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -535,7 +678,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  booking.ticketId,
+                  "TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase() ?? 'N/A'}",
                   style: TextStyle(
                     fontSize: 14.sp,
                     color: Colors.grey[600],
@@ -543,7 +686,8 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
                 ),
                 SizedBox(height: 20.h),
                 QrImageView(
-                  data: booking.ticketId,
+                  data:
+                      "TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase() ?? 'N/A'}",
                   version: QrVersions.auto,
                   size: 200.sp,
                   backgroundColor: Colors.white,
@@ -579,9 +723,8 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
     );
   }
 
-  // Download functionality (same as BookingSuccessScreen but adapted for BookingModel)
   Future<void> _generateAndDownloadTicket(
-      BuildContext context, BookingModel booking) async {
+      BuildContext context, ApiBookingModel booking) async {
     try {
       bool hasPermission = await _requestStoragePermission();
 
@@ -591,42 +734,102 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
         return;
       }
 
+      // Load logo
+      pw.MemoryImage? logoImage;
+      try {
+        final logoData = await rootBundle.load('assets/images/logo.png');
+        logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+      } catch (e) {
+        print('Error loading logo: $e');
+      }
+
       final pdf = pw.Document();
 
+      // FIRST PAGE - Main ticket content
       pdf.addPage(
         pw.Page(
-          build: (context) => pw.Padding(
-            padding: const pw.EdgeInsets.all(20),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text("Roadway Ticket",
-                    style: pw.TextStyle(
-                        fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 20),
-                pw.Text("Ticket ID: ${booking.ticketId}"),
-                pw.Text("Passenger: ${booking.passenger}"),
-                pw.Text("Route: ${booking.route}"),
-                pw.Text("Date: ${booking.date}"),
-                pw.Text("Time: ${booking.time}"),
-                pw.Text("Seats: ${booking.seats}"),
-                pw.Text("Fare: ${booking.fare}"),
-                pw.Text("Bus Number: ${booking.busNumber}"),
-                pw.Text("Status: ${booking.status.name.toUpperCase()}"),
-                pw.SizedBox(height: 20),
-                pw.Text("Scan this QR at the station:",
-                    style: pw.TextStyle(fontSize: 14)),
-                pw.SizedBox(height: 10),
-                pw.Center(
-                  child: pw.BarcodeWidget(
-                    data: booking.ticketId,
-                    barcode: pw.Barcode.qrCode(),
-                    width: 120,
-                    height: 120,
-                  ),
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20), // Add proper margins
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              _buildTicketHeader(logoImage, booking),
+              pw.SizedBox(height: 20),
+
+              // Customer Details Section
+              _buildCustomerDetails(booking),
+              pw.SizedBox(height: 20),
+
+              // Journey Details Section
+              _buildJourneyDetails(booking),
+              pw.SizedBox(height: 20),
+
+              // QR Code Section
+              _buildQRSection(booking),
+
+              pw.Spacer(), // Push footer to bottom
+
+              // Page footer
+              pw.Container(
+                alignment: pw.Alignment.center,
+                child: pw.Text(
+                  "Page 1 of 2 - Please see next page for Terms & Conditions",
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // SECOND PAGE - Terms and Conditions
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20),
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header for second page
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.symmetric(vertical: 15),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.orange50,
+                  border: pw.Border.all(color: PdfColors.orange200),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text(
+                      "ROADWAY - Terms & Conditions",
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.orange800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 20),
+
+              // Terms and Conditions - Full content
+              pw.Expanded(
+                child: _buildTermsAndConditions(),
+              ),
+
+              // Footer
+              pw.Container(
+                alignment: pw.Alignment.center,
+                child: pw.Text(
+                  "Page 2 of 2",
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -643,6 +846,473 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
     } catch (e) {
       _showErrorDialog(context, "Failed to download ticket: ${e.toString()}");
     }
+  }
+
+  pw.Widget _buildTicketHeader(
+      pw.MemoryImage? logoImage, ApiBookingModel booking) {
+    return pw.Container(
+      color: PdfColors.orange50,
+      padding: const pw.EdgeInsets.all(15),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Row(
+            children: [
+              if (logoImage != null) ...[
+                pw.Image(logoImage, width: 300, height: 100),
+                pw.SizedBox(width: 10),
+              ],
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    "ROADWAY",
+                    style: pw.TextStyle(
+                      fontSize: 24,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.orange800,
+                    ),
+                  ),
+                  pw.Text(
+                    "eTICKET",
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text(
+                "Faisal Movers",
+                style:
+                    pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                "+923030720728",
+                style:
+                    const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildCustomerDetails(ApiBookingModel booking) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(15),
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            flex: 2,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  "Customer Details",
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Row(
+                  children: [
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text("Journey",
+                              style: const pw.TextStyle(
+                                  fontSize: 10, color: PdfColors.grey700)),
+                          pw.Text(
+                              "${booking.pickupLocation} -> ${booking.dropoffLocation}",
+                              style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(height: 8),
+                          pw.Text("Booked On",
+                              style: const pw.TextStyle(
+                                  fontSize: 10, color: PdfColors.grey700)),
+                          pw.Text(_formatDateForTicket(booking.createdAt),
+                              style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text("Journey Date",
+                              style: const pw.TextStyle(
+                                  fontSize: 10, color: PdfColors.grey700)),
+                          pw.Text(_formatDateForTicket(booking.bookingDate),
+                              style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(height: 8),
+                          pw.Text("Departure Time",
+                              style: const pw.TextStyle(
+                                  fontSize: 10, color: PdfColors.grey700)),
+                          pw.Text(booking.departureTime,
+                              style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          pw.Container(
+            width: 1,
+            height: 80,
+            color: PdfColors.grey300,
+          ),
+          pw.SizedBox(width: 15),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  "Operator Details",
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text("Contact No.",
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey700)),
+                pw.Text("+923030720728",
+                    style: pw.TextStyle(
+                        fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 5),
+                pw.Text("Email",
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey700)),
+                pw.Text("talhashahidarain@gmail.com",
+                    style: pw.TextStyle(
+                        fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildJourneyDetails(ApiBookingModel booking) {
+    return pw.Container(
+      color: PdfColors.grey100,
+      padding: const pw.EdgeInsets.all(15),
+      child: pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text("Talha Shahid",
+                  style: pw.TextStyle(
+                      fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            ],
+          ),
+          pw.SizedBox(height: 5),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text("A/C Sleeper (2+2)",
+                  style: const pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700)),
+              pw.Text("Seat Number",
+                  style: const pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700)),
+              pw.Text("Departure time",
+                  style: const pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700)),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text("Faisal Movers",
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.Text(booking.seatsDisplay,
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.Text(booking.departureTime,
+                  style: pw.TextStyle(
+                      fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            ],
+          ),
+          pw.SizedBox(height: 5),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(booking.busNumber,
+                  style: const pw.TextStyle(fontSize: 12)),
+              pw.Text(
+                  _calculateDuration(
+                          booking.departureTime, booking.arrivalTime) ??
+                      '8h 00m',
+                  style: const pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700)),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+          pw.Divider(thickness: 1, color: PdfColors.grey400),
+          pw.SizedBox(height: 15),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("Booking Date",
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text(
+                      _formatDateForTicket(booking
+                          .bookingDate), //{_formatDate(booking.createdAt)}
+                      style: pw.TextStyle(
+                          fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("From",
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text(booking.pickupLocation,
+                      style: pw.TextStyle(
+                          fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("To",
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text(booking.dropoffLocation,
+                      style: pw.TextStyle(
+                          fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text("Booking ID",
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text(
+                      "TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase()}",
+                      style: pw.TextStyle(
+                          fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.end,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text("Base Fare Rs.${booking.fare}/-",
+                      style: const pw.TextStyle(fontSize: 10)),
+                  pw.Divider(thickness: 1, color: PdfColors.grey400),
+                  pw.Text("Net Amount Rs.${booking.fare}/-",
+                      style: pw.TextStyle(
+                          fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildQRSection(ApiBookingModel booking) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(15),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  "Important Instructions:",
+                  style: pw.TextStyle(
+                      fontSize: 12, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 5),
+                pw.Text(
+                  "Please carry a printed copy or show this e-ticket on your mobile device",
+                  style: const pw.TextStyle(
+                      fontSize: 10, color: PdfColors.grey700),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 20),
+          pw.Column(
+            children: [
+              pw.BarcodeWidget(
+                data:
+                    "TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase()}",
+                barcode: pw.Barcode.qrCode(),
+                width: 80,
+                height: 80,
+              ),
+              pw.SizedBox(height: 5),
+              pw.Text(
+                "Scan at Station",
+                style:
+                    const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildTermsAndConditions() {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          "Terms and Conditions",
+          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 15),
+
+        // Terms in a more compact layout
+        pw.Column(
+          children: [
+            _buildTermItem("1.",
+                "Roadway is ONLY a bus ticket agent and does not provide bus services on its own. The services are provided by the bus operator."),
+            _buildTermItem("2.",
+                "Our responsibility includes reservation for seat that will be occupied by passenger in bus during his/her journey."),
+            _buildTermItem("3.",
+                "Our responsibility includes information and maintenance on account of online support and information in case of cancellations."),
+            _buildTermItem("4.",
+                "The bus operator and roadway reserve the right to refuse service to any person without assigning any reasons. Intoxicated persons may not be allowed to travel."),
+            _buildTermItem("5.",
+                "The bus operator not departing/reaching on time is their own discretion and we are not liable for the same."),
+            _buildTermItem("6.",
+                "In case of breakdown or any unforeseen problems during journey, alternate transport will be provided by the operator."),
+            _buildTermItem("7.",
+                "The bus operator cancelling the trip due to unavoidable circumstances is not liable for the same."),
+            _buildTermItem("8.",
+                "Bus operators may ask for identification proof i.e. driving license, election card, pan card, passport, etc."),
+            _buildTermItem("9.",
+                "Passenger shall be deemed as confirmed only at the time of boarding."),
+            _buildTermItem("10.",
+                "Cancellation charges would be as per the cancellation policy of the operator or 15% of gross amount whichever is higher."),
+            _buildTermItem("11.",
+                "Departure and arrival times mentioned are as per the operator's time table and passengers should be present at pickup points 15 minutes prior."),
+            _buildTermItem("12.",
+                "Passengers should recheck route, time and terminals. Late arrivals will be treated as no-show and cancellation policy will apply."),
+            _buildTermItem("13.",
+                "Carrying dangerous or illegal items is prohibited and anyone found carrying such items will be handed over to authorities."),
+            _buildTermItem("14.",
+                "For any arrangement related query please call Roadway support numbers provided."),
+            _buildTermItem("15.",
+                "This e-ticket does not warrant confirmed travel and is subject to availability of seats at boarding."),
+            _buildTermItem("16.",
+                "Passengers in excess of permissible seating capacity shall not be entertained."),
+            _buildTermItem("17.",
+                "Road permit does not give confirmation and fare related issues are dependent on bus operators."),
+          ],
+        ),
+
+        pw.SizedBox(height: 20),
+
+        // Additional info section
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey100,
+            border: pw.Border.all(color: PdfColors.grey300),
+          ),
+          child: pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text("Have a safe journey!",
+                          style: pw.TextStyle(
+                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 5),
+                      pw.Text("For Assistance Call: +923030720728",
+                          style: const pw.TextStyle(
+                              fontSize: 10, color: PdfColors.grey700)),
+                      pw.Text("Available: Mon-Sun 11:00 AM to 6:00 PM",
+                          style: const pw.TextStyle(
+                              fontSize: 10, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text("Cancellation Policy",
+                          style: pw.TextStyle(
+                              fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                      pw.Text("Before 6 hours: 90% refund",
+                          style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text("After 6 hours: No refund",
+                          style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildTermItem(String number, String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6), // Increased spacing
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(
+            width: 20, // Increased width for number
+            child: pw.Text(
+              number,
+              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              text,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.black),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<bool> _requestStoragePermission() async {
@@ -672,7 +1342,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
   }
 
   Future<String?> _saveFileToDevice(
-      List<int> pdfBytes, BookingModel booking) async {
+      List<int> pdfBytes, ApiBookingModel booking) async {
     try {
       Directory? directory;
 
@@ -696,7 +1366,8 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'Ticket_${booking.ticketId}_$timestamp.pdf';
+      final fileName =
+          'Ticket_${"TKT${(booking.primaryBookingId).substring(0, 8).toUpperCase() ?? 'N/A'}"}_$timestamp.pdf';
       final filePath = '${roadwayDir.path}/$fileName';
 
       final file = File(filePath);
@@ -755,40 +1426,137 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
       },
     );
   }
+
+  Widget _buildBottomNavBar() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h, left: 24.w, right: 24.w),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+      height: 70.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFF6C63FF).withOpacity(0.8),
+        borderRadius: BorderRadius.circular(35.r),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9C88FF).withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _bottomNavItem(Icons.home_rounded, 0),
+          _bottomNavItem(Icons.confirmation_number_rounded, 1),
+          _bottomNavItem(Icons.campaign_rounded, 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _bottomNavItem(IconData icon, int index) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        if (index == 0) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  const HomeScreen(), // Replace with your HomeScreen
+            ),
+          );
+        } else if (index == 2) {
+          Navigator.pushNamed(context, AppRoutes.announcements);
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const BookingsHistoryScreen(),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
+          size: 26.sp,
+        ),
+      ),
+    );
+  }
 }
 
-// Data Models
-class BookingModel {
-  final String ticketId;
-  final String passenger;
-  final String route;
-  final String date;
-  final String time;
-  final String arrivalTime;
-  final String seats;
-  final String fare;
-  final String busNumber;
-  final String duration;
-  final BookingStatus status;
+// Updated Data Model for API Response
+class ApiBookingModel {
+  final DateTime createdAt;
+  final String tripId;
   final DateTime bookingDate;
+  final String busNumber;
+  final int fare;
+  final String departureTime;
+  final String arrivalTime;
+  final String pickupLocation;
+  final String dropoffLocation;
+  final List<int> seatNumbers;
+  final List<String> bookingIds;
+  final BookingStatus status;
 
-  BookingModel({
-    required this.ticketId,
-    required this.passenger,
-    required this.route,
-    required this.date,
-    required this.time,
-    required this.arrivalTime,
-    required this.seats,
-    required this.fare,
-    required this.busNumber,
-    required this.duration,
-    required this.status,
+  ApiBookingModel({
+    required this.createdAt,
+    required this.tripId,
     required this.bookingDate,
+    required this.busNumber,
+    required this.fare,
+    required this.departureTime,
+    required this.arrivalTime,
+    required this.pickupLocation,
+    required this.dropoffLocation,
+    required this.seatNumbers,
+    required this.bookingIds,
+    required this.status,
   });
+
+  factory ApiBookingModel.fromJson(Map<String, dynamic> json) {
+    return ApiBookingModel(
+      createdAt: DateTime.parse(json['createdAt']),
+      tripId: json['tripId'],
+      bookingDate: DateTime.parse(json['bookingDate']),
+      busNumber: json['busNumber'],
+      fare: json['fare'],
+      departureTime: json['departureTime'],
+      arrivalTime: json['arrivalTime'],
+      pickupLocation: json['pickupLocation'],
+      dropoffLocation: json['dropoffLocation'],
+      seatNumbers: List<int>.from(json['seatNumbers']),
+      bookingIds: List<String>.from(json['bookingIds']),
+      status: json['bookingStatus'] == 'Pending'
+          ? BookingStatus.Pending
+          : BookingStatus.Confirmed,
+    );
+  }
+
+  String get primaryBookingId => bookingIds.first;
+
+  String get seatsDisplay {
+    if (seatNumbers.length == 1) {
+      return seatNumbers.first.toString();
+    }
+    return seatNumbers.join(', ');
+  }
 }
 
 enum BookingStatus {
-  confirmed,
-  pending,
+  Confirmed,
+  Pending,
 }

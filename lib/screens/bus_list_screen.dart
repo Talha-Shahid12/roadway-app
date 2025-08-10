@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BusListScreen extends StatefulWidget {
   const BusListScreen({super.key});
@@ -528,8 +529,8 @@ class _BusListScreenState extends State<BusListScreen>
 
               Text(
                 "No Results Found",
-                style: TextStyle(
-                  fontSize: 24.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1A1A1A),
                   letterSpacing: -0.5,
@@ -546,8 +547,8 @@ class _BusListScreenState extends State<BusListScreen>
                 ),
                 child: Text(
                   '"${_searchController.text}"',
-                  style: TextStyle(
-                    fontSize: 14.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.sp,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF6C63FF),
                   ),
@@ -559,8 +560,8 @@ class _BusListScreenState extends State<BusListScreen>
               Text(
                 "Try searching for:",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
                   color: Colors.grey[600],
                   height: 1.5,
                 ),
@@ -603,8 +604,8 @@ class _BusListScreenState extends State<BusListScreen>
                 ),
                 child: Text(
                   "Clear Search",
-                  style: TextStyle(
-                    fontSize: 16.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -621,8 +622,8 @@ class _BusListScreenState extends State<BusListScreen>
       alignment: Alignment.centerLeft,
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 14.sp,
+        style: GoogleFonts.poppins(
+          fontSize: 12.sp,
           color: Colors.grey[600],
           height: 1.3,
         ),
@@ -683,8 +684,8 @@ class _BusListScreenState extends State<BusListScreen>
               SizedBox(height: 24.h),
               Text(
                 "No Buses Found",
-                style: TextStyle(
-                  fontSize: 24.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1A1A1A),
                   letterSpacing: -0.5,
@@ -701,8 +702,8 @@ class _BusListScreenState extends State<BusListScreen>
                   ),
                   child: Text(
                     "${searchParams!['from']} → ${searchParams!['to']}",
-                    style: TextStyle(
-                      fontSize: 14.sp,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF6C63FF),
                     ),
@@ -712,8 +713,8 @@ class _BusListScreenState extends State<BusListScreen>
               Text(
                 "We couldn't find any buses for your selected route and date. This might be due to:",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
                   color: Colors.grey[600],
                   height: 1.5,
                 ),
@@ -766,8 +767,8 @@ class _BusListScreenState extends State<BusListScreen>
                         SizedBox(width: 8.w),
                         Text(
                           "Try Different Date",
-                          style: TextStyle(
-                            fontSize: 16.sp,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF6C63FF),
                             letterSpacing: 0.5,
@@ -790,8 +791,8 @@ class _BusListScreenState extends State<BusListScreen>
       alignment: Alignment.centerLeft,
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 14.sp,
+        style: GoogleFonts.poppins(
+          fontSize: 12.sp,
           color: Colors.grey[600],
           height: 1.3,
         ),
@@ -806,9 +807,9 @@ class _BusListScreenState extends State<BusListScreen>
       appBar: AppBar(
         title: Text(
           "Available Buses",
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 20.sp,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -855,7 +856,7 @@ class _BusListScreenState extends State<BusListScreen>
                   SizedBox(height: 16.h),
                   Text(
                     "Loading available buses...",
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Colors.grey[600],
                       fontSize: 14.sp,
                     ),
@@ -894,8 +895,8 @@ class _BusListScreenState extends State<BusListScreen>
                                 children: [
                                   Text(
                                     "${searchParams!['from']} → ${searchParams!['to']}",
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
                                       color: const Color(0xFF1A1A1A),
                                     ),
@@ -906,8 +907,8 @@ class _BusListScreenState extends State<BusListScreen>
                                         ? DateFormat('EEE, MMM dd')
                                             .format(searchParams!['date'])
                                         : searchParams!['formattedDate'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.sp,
                                       color: Colors.grey[600],
                                     ),
                                   ),
@@ -961,9 +962,9 @@ class _BusListScreenState extends State<BusListScreen>
                                   decoration: InputDecoration(
                                     hintText:
                                         "Search by city, fare, service, date...",
-                                    hintStyle: TextStyle(
+                                    hintStyle: GoogleFonts.poppins(
                                       color: Colors.grey[400],
-                                      fontSize: 14.sp,
+                                      fontSize: 12.sp,
                                     ),
                                     prefixIcon: Icon(
                                       Icons.search,
@@ -987,8 +988,8 @@ class _BusListScreenState extends State<BusListScreen>
                                     contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12.w, vertical: 12.h),
                                   ),
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.sp,
                                     color: const Color(0xFF1A1A1A),
                                   ),
                                 ),
@@ -1022,7 +1023,7 @@ class _BusListScreenState extends State<BusListScreen>
                                   SizedBox(width: 6.w),
                                   Text(
                                     sortBy,
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontSize: 12.sp,
                                       fontWeight: FontWeight.w600,
@@ -1047,8 +1048,8 @@ class _BusListScreenState extends State<BusListScreen>
                           children: [
                             Text(
                               "${filteredBuses.length} bus${filteredBuses.length == 1 ? '' : 'es'} found",
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.w500,
                               ),
@@ -1064,8 +1065,8 @@ class _BusListScreenState extends State<BusListScreen>
                                 ),
                                 child: Text(
                                   "Searching...",
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10.sp,
                                     color: const Color(0xFF6C63FF),
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1182,8 +1183,8 @@ class _BusListScreenState extends State<BusListScreen>
               padding: EdgeInsets.all(20.w),
               child: Text(
                 "Filter & Sort",
-                style: TextStyle(
-                  fontSize: 18.sp,
+                style: GoogleFonts.poppins(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1338,8 +1339,8 @@ class AestheticBusCard extends StatelessWidget {
                                     SizedBox(width: 4.w),
                                     Text(
                                       busData.formattedDate,
-                                      style: TextStyle(
-                                        fontSize: 11.sp,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 9.sp,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -1359,15 +1360,15 @@ class AestheticBusCard extends StatelessWidget {
                       children: [
                         _buildHighlightedText(
                           busData.fare,
-                          TextStyle(
-                            fontSize: 18.sp,
+                          GoogleFonts.poppins(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF00C853),
                           ),
                         ),
                         Text(
                           "per person",
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 10.sp,
                             color: Colors.grey[500],
                           ),
@@ -1377,7 +1378,7 @@ class AestheticBusCard extends StatelessWidget {
                   ],
                 ),
 
-                SizedBox(height: 20.h),
+                SizedBox(height: 10.h),
 
                 // Route with animated timeline
                 Row(
@@ -1389,8 +1390,8 @@ class AestheticBusCard extends StatelessWidget {
                         children: [
                           Text(
                             busData.departureTime,
-                            style: TextStyle(
-                              fontSize: 16.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1A1A1A),
                             ),
@@ -1398,8 +1399,8 @@ class AestheticBusCard extends StatelessWidget {
                           SizedBox(height: 4.h),
                           _buildHighlightedText(
                             busData.pickupLocation,
-                            TextStyle(
-                              fontSize: 13.sp,
+                            GoogleFonts.poppins(
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey[600],
                             ),
@@ -1449,8 +1450,8 @@ class AestheticBusCard extends StatelessWidget {
                           SizedBox(height: 4.h),
                           Text(
                             busData.duration,
-                            style: TextStyle(
-                              fontSize: 11.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w600,
                               color: Colors.grey[500],
                             ),
@@ -1466,8 +1467,8 @@ class AestheticBusCard extends StatelessWidget {
                         children: [
                           Text(
                             busData.arrivalTime,
-                            style: TextStyle(
-                              fontSize: 16.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1A1A1A),
                             ),
@@ -1475,8 +1476,8 @@ class AestheticBusCard extends StatelessWidget {
                           SizedBox(height: 4.h),
                           _buildHighlightedText(
                             busData.dropoffLocation,
-                            TextStyle(
-                              fontSize: 13.sp,
+                            GoogleFonts.poppins(
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey[600],
                             ),
@@ -1506,8 +1507,8 @@ class AestheticBusCard extends StatelessWidget {
                             ),
                             child: Text(
                               amenity,
-                              style: TextStyle(
-                                fontSize: 10.sp,
+                              style: GoogleFonts.poppins(
+                                fontSize: 9.sp,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF6C63FF),
                               ),
@@ -1540,8 +1541,8 @@ class AestheticBusCard extends StatelessWidget {
                           SizedBox(width: 4.w),
                           Text(
                             "${busData.availableSeats} left",
-                            style: TextStyle(
-                              fontSize: 11.sp,
+                            style: GoogleFonts.poppins(
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w600,
                               color: busData.availableSeats < 5
                                   ? Colors.red[600]

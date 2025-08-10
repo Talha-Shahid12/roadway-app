@@ -58,6 +58,7 @@ dev_dependencies:
   open_file: ^3.5.10
   path_provider: ^2.1.5
   device_info_plus: 11.3.0
+  flutter_secure_storage: ^9.2.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
