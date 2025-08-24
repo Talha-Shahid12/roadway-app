@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:roadway/Services/StorageService.dart';
+import 'package:roadway/Services/UserAuthStorage.dart';
 
 // Response Models
 class ApiResponse<T> {
@@ -72,10 +74,16 @@ class RegisterResponse {
 
 class LoginResponse {
   final String token;
+  final String name;
+  final String email;
+  final String gender;
   final String responseMessage;
   final String responseCode;
 
   LoginResponse({
+    required this.name,
+    required this.email,
+    required this.gender,
     required this.token,
     required this.responseMessage,
     required this.responseCode,
@@ -83,6 +91,9 @@ class LoginResponse {
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      gender: json['gender'] ?? '',
       token: json['token'] ?? '',
       responseMessage: json['responseMessage'] ?? '',
       responseCode: json['responseCode'] ?? '',
@@ -91,6 +102,9 @@ class LoginResponse {
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
+      'email': email,
+      'gender': gender,
       'token': token,
       'responseMessage': responseMessage,
       'responseCode': responseCode,
@@ -669,9 +683,183 @@ class TopTripData {
   }
 }
 
+// API Response Model
+class AnnouncementResponse {
+  final bool success;
+  final String message;
+  final List<AnnouncementApiModel> announcements;
+  final int count;
+
+  AnnouncementResponse({
+    required this.success,
+    required this.message,
+    required this.announcements,
+    required this.count,
+  });
+
+  factory AnnouncementResponse.fromJson(Map<String, dynamic> json) {
+    return AnnouncementResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      announcements: (json['announcements'] as List<dynamic>?)
+              ?.map((item) => AnnouncementApiModel.fromJson(item))
+              .toList() ??
+          [],
+      count: json['count'] ?? 0,
+    );
+  }
+}
+
+// API Model that matches your API response
+class AnnouncementApiModel {
+  final String id;
+  final String title;
+  final String content;
+  final String category;
+  final String priority;
+  final String operatorName;
+  final String? email;
+  final DateTime publishedDate;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  AnnouncementApiModel({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.category,
+    required this.priority,
+    required this.operatorName,
+    this.email,
+    required this.publishedDate,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AnnouncementApiModel.fromJson(Map<String, dynamic> json) {
+    return AnnouncementApiModel(
+      id: json['_id'] ?? '',
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      category: json['category'] ?? '',
+      priority: json['priority'] ?? 'low',
+      operatorName: json['operatorName'] ?? '',
+      email: json['email'],
+      publishedDate:
+          DateTime.tryParse(json['publishedDate'] ?? '') ?? DateTime.now(),
+      isActive: json['isActive'] ?? true,
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  // Convert API model to your existing AnnouncementData model
+  AnnouncementData toAnnouncementData() {
+    return AnnouncementData(
+      id: id,
+      title: title,
+      content: content,
+      operatorName: operatorName,
+      category: category,
+      priority: _mapPriority(priority),
+      publishedDate: publishedDate,
+      isRead: !isActive,
+      imageUrl: null, // Add image URL if your API provides it
+    );
+  }
+
+  AnnouncementPriority _mapPriority(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return AnnouncementPriority.high;
+      case 'medium':
+        return AnnouncementPriority.medium;
+      case 'low':
+      default:
+        return AnnouncementPriority.low;
+    }
+  }
+}
+
+enum AnnouncementPriority { high, medium, low }
+
+class AnnouncementData {
+  final String id;
+  final String title;
+  final String content;
+  final String operatorName;
+  final String category;
+  final AnnouncementPriority priority;
+  final DateTime publishedDate;
+  final bool isRead;
+  final String? imageUrl;
+
+  const AnnouncementData({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.operatorName,
+    required this.category,
+    required this.priority,
+    required this.publishedDate,
+    required this.isRead,
+    this.imageUrl,
+  });
+
+  AnnouncementData copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? operatorName,
+    String? category,
+    AnnouncementPriority? priority,
+    DateTime? publishedDate,
+    bool? isRead,
+    String? imageUrl,
+  }) {
+    return AnnouncementData(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      operatorName: operatorName ?? this.operatorName,
+      category: category ?? this.category,
+      priority: priority ?? this.priority,
+      publishedDate: publishedDate ?? this.publishedDate,
+      isRead: isRead ?? this.isRead,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
+}
+
+// Add this response model to your existing models
+class MarkAnnouncementResponse {
+  final bool success;
+  final String message;
+  final String responseCode;
+  final Map<String, dynamic>? data;
+
+  MarkAnnouncementResponse({
+    required this.success,
+    required this.message,
+    required this.responseCode,
+    this.data,
+  });
+
+  factory MarkAnnouncementResponse.fromJson(Map<String, dynamic> json) {
+    return MarkAnnouncementResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      responseCode: json['responseCode'] ?? '99',
+      data: json['data'],
+    );
+  }
+}
+
 // Main API Service Class
 class ApiCalls {
-  static const String baseUrl = "https://c06814910c9e.ngrok-free.app";
+  static const String baseUrl = "https://03959292fbf3.ngrok-free.app";
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   // Headers
@@ -696,6 +884,7 @@ class ApiCalls {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response
         final data = fromJson(responseBody);
+
         return ApiResponse.success(
           message: responseBody['responseMessage'] ??
               responseBody['message'] ??
@@ -900,11 +1089,12 @@ class ApiCalls {
     }
   }
 
-  // Login API Call
   static Future<ApiResponse<LoginResponse>> login({
     required String email,
     required String password,
   }) async {
+    print('🔥 LOGIN FUNCTION STARTED'); // Add this at the very beginning
+
     try {
       final loginRequest = LoginRequest(
         email: email,
@@ -914,6 +1104,8 @@ class ApiCalls {
       print('🚀 Making login request to: $baseUrl/api/auth/login');
       print('📝 Request body: ${json.encode(loginRequest.toJson())}');
 
+      print('⏰ About to make HTTP request'); // Add this
+
       final response = await http
           .post(
             Uri.parse('$baseUrl/api/auth/login'),
@@ -922,16 +1114,123 @@ class ApiCalls {
           )
           .timeout(timeoutDuration);
 
+      print('📥 Response received!'); // Add this
       print('📥 Response status: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
 
-      return _handleResponse<LoginResponse>(
+      // Handle the response
+      final apiResponse = _handleResponse<LoginResponse>(
         response,
         (json) => LoginResponse.fromJson(json),
       );
+
+      // If login is successful, store user data automatically
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        print('✅ Login successful, storing user data...');
+        await _storeUserDataFromLoginResponse(response.body);
+      }
+
+      return apiResponse;
     } catch (e) {
       print('❌ Login error: ${e.toString()}');
+      print('❌ Error type: ${e.runtimeType}'); // Add this for more detail
       return _handleException<LoginResponse>(e);
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateFCMToken({
+    required String email,
+    required String fcmToken,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/api/announcement/update-fcm-token');
+      log('Updating FCM token for email: $email');
+      log("FCM Token: $fcmToken");
+      log('Making FCM token update request to: $url');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'fcmToken': fcmToken,
+        }),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message':
+              responseData['message'] ?? 'FCM token updated successfully',
+          'data': responseData,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to update FCM token',
+          'errors': responseData['errors'] ?? [],
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+        'errors': [],
+      };
+    }
+  }
+
+// Helper function to store user data from login response
+  static Future<void> _storeUserDataFromLoginResponse(
+      String responseBody) async {
+    try {
+      final Map<String, dynamic> response = json.decode(responseBody);
+
+      // Check if response contains user data and is successful
+      if (response['responseCode'] == '00' &&
+          response['responseMessage'] == 'Success' &&
+          response.containsKey('user')) {
+        final Map<String, dynamic> userJson = response['user'];
+
+        // Create UserData object
+        final userData = UserData.fromLogin(
+          token: userJson['token']?.toString() ?? '',
+          name: userJson['name']?.toString() ?? '',
+          email: userJson['email']?.toString() ?? '',
+          gender: userJson['gender']?.toString() ?? '',
+        );
+
+        // Validate user data before storing
+        if (userData.isComplete) {
+          // Save to secure storage
+          await UserAuthStorage.saveUserData(userData);
+
+          // Also save token separately for quick access
+          await UserAuthStorage.saveAuthToken(userData.token);
+
+          print('💾 User data stored successfully:');
+          print('   👤 Name: ${userData.name}');
+          print('   📧 Email: ${userData.email}');
+          print('   🎭 Gender: ${userData.gender}');
+          print('   🔑 Token: ${userData.token}');
+        } else {
+          print('⚠️ Incomplete user data, not storing');
+          print('   Token empty: ${userData.token.isEmpty}');
+          print('   Name empty: ${userData.name.isEmpty}');
+          print('   Email empty: ${userData.email.isEmpty}');
+          print('   Gender empty: ${userData.gender.isEmpty}');
+        }
+      } else {
+        print('⚠️ Response does not contain valid user data');
+        print('   Response code: ${response['responseCode']}');
+        print('   Contains user: ${response.containsKey('user')}');
+      }
+    } catch (e) {
+      print('❌ Error storing user data from login response: $e');
     }
   }
 
@@ -1254,6 +1553,249 @@ class ApiCalls {
         success: false,
         message: 'Network error: ${e.toString()}',
       );
+    }
+  }
+
+  static Future<AnnouncementResponse> fetchAnnouncements(String email) async {
+    try {
+      log("email in fetchAnnouncements: $email");
+      final response = await http.post(
+        Uri.parse(
+            '$baseUrl/api/announcement/list'), // Replace with your actual endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any authentication headers if needed
+          // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        return AnnouncementResponse.fromJson(jsonData);
+      } else {
+        throw Exception('Failed to load announcements: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching announcements: $e');
+    }
+  }
+
+// Add this function to your ApiCalls class
+  static Future<ApiResponse<MarkAnnouncementResponse>> markAnnouncementAsRead({
+    required String announcementId,
+    String? token,
+  }) async {
+    try {
+      print(
+          '🚀 Making mark announcement as read request to: $baseUrl/api/announcement/mark-as-read');
+      print('📝 Request body: ${json.encode({
+            'announcementId': announcementId
+          })}');
+
+      final headers = token != null ? _headersWithToken(token) : _headers;
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/announcement/mark-as-read'),
+            headers: headers,
+            body: json.encode({
+              'announcementId': announcementId,
+            }),
+          )
+          .timeout(timeoutDuration);
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      return _handleResponse<MarkAnnouncementResponse>(
+        response,
+        (json) => MarkAnnouncementResponse.fromJson(json),
+      );
+    } catch (e) {
+      print('❌ Mark announcement as read error: ${e.toString()}');
+      return _handleException<MarkAnnouncementResponse>(e);
+    }
+  }
+
+  // Helper function to mark announcement as read and update local state
+  static Future<bool> markAnnouncementAsReadAndUpdate({
+    required String announcementId,
+    String? token,
+    Function(String)? onSuccess,
+    Function(String)? onError,
+  }) async {
+    try {
+      final response = await markAnnouncementAsRead(
+        announcementId: announcementId,
+        token: token,
+      );
+
+      if (response.success && response.data != null) {
+        final markResponse = response.data!;
+
+        if (markResponse.success && markResponse.responseCode == '00') {
+          print('✅ Announcement marked as read successfully');
+          onSuccess?.call(markResponse.message);
+          return true;
+        } else {
+          print(
+              '❌ Failed to mark announcement as read: ${markResponse.message}');
+          onError?.call(markResponse.message);
+          return false;
+        }
+      } else {
+        print('❌ API call failed: ${response.message}');
+        onError?.call(response.message);
+        return false;
+      }
+    } catch (e) {
+      print('❌ Exception in markAnnouncementAsReadAndUpdate: $e');
+      onError?.call('Failed to mark announcement as read: $e');
+      return false;
+    }
+  }
+
+  // Function 1: Send OTP to email
+  static Future<Map<String, dynamic>> sendOTP(String email) async {
+    try {
+      log("📤 Sending OTP to email: $email");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/send-otp'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      log("📥 Send OTP Response: ${response.statusCode}");
+      log("📥 Send OTP Body: ${response.body}");
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'OTP sent successfully',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to send OTP',
+          'error': responseData['error'],
+        };
+      }
+    } catch (e) {
+      log("❌ Send OTP Error: $e");
+      return {
+        'success': false,
+        'message': 'Network error occurred',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Function 2: Verify OTP
+  static Future<Map<String, dynamic>> verifyOTP(
+      String email, String otp) async {
+    try {
+      log("📤 Verifying OTP for email: $email");
+      log("📤 OTP: $otp");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/verify-otp'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+
+      log("📥 Verify OTP Response: ${response.statusCode}");
+      log("📥 Verify OTP Body: ${response.body}");
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'OTP verified successfully',
+          'data': responseData['data'],
+          'resetToken':
+              responseData['resetToken'], // Token needed for password reset
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Invalid OTP',
+          'error': responseData['error'],
+        };
+      }
+    } catch (e) {
+      log("❌ Verify OTP Error: $e");
+      return {
+        'success': false,
+        'message': 'Network error occurred',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Function 3: Reset Password
+  static Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      log("📤 Resetting password for email: $email");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'newPassword': newPassword,
+        }),
+      );
+
+      log("📥 Reset Password Response: ${response.statusCode}");
+      log("📥 Reset Password Body: ${response.body}");
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Password reset successfully',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to reset password',
+          'error': responseData['error'],
+        };
+      }
+    } catch (e) {
+      log("❌ Reset Password Error: $e");
+      return {
+        'success': false,
+        'message': 'Network error occurred',
+        'error': e.toString(),
+      };
     }
   }
 }

@@ -1,6 +1,11 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:roadway/Services/NotificationService.dart';
+import 'package:roadway/Services/UserAuthStorage.dart';
 import 'package:roadway/routes/app_routes.dart';
+import 'package:roadway/screens/forgot_password_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../services/ApiCalls.dart'; // Import your API service
@@ -158,7 +163,11 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // Show success dialog
-  void _showSuccessDialog() {
+  Future<void> _showSuccessDialog() async {
+    final user = await UserAuthStorage.getUserData();
+    if (user == null) {
+      _showErrorDialog('User data not found. Please try again.');
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -171,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen>
             SizedBox(width: 12.w),
             Expanded(
               child: Text(
-                "Login Successful!",
+                "Welcome back, ${user?.displayName ?? ""}!",
                 style: GoogleFonts.poppins(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
@@ -193,6 +202,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Handle login function
   Future<void> _handleLogin() async {
+    print("attempting to login...");
     // Validate form
     final validationError = _validateForm();
     if (validationError != null) {
@@ -223,12 +233,26 @@ class _LoginScreenState extends State<LoginScreen>
         // Check response code from API
         if (response.data!.responseCode == "00") {
           // Store token if needed (you can use shared preferences or secure storage)
-          String token = response.data!.token;
-          print('🎉 Login successful! Token: $token');
+          // Future<String> fcmToken = FirebaseNotificationService().getToken();
+          final String? newFcmToken =
+              await FirebaseNotificationService().getToken();
+          log("New FCM Token: $newFcmToken");
+          final fcmUpdateResponse = await ApiCalls.updateFCMToken(
+              email: _emailController.text.trim().toString(),
+              fcmToken: newFcmToken!);
 
-          // Show success dialog
-          _showSuccessDialog();
-          Navigator.pushNamed(context, AppRoutes.home);
+          if (fcmUpdateResponse['success'] == true) {
+            print('🔔 FCM token updated successfully on the server.');
+            String token = response.data!.token;
+            print('🎉 Login successful! Token: $token');
+
+            // Show success dialog
+            _showSuccessDialog();
+            Navigator.pushNamed(context, AppRoutes.home);
+          } else {
+            _showErrorDialog(fcmUpdateResponse['message'] ??
+                'Failed to update FCM token on the server.');
+          }
         } else {
           // Handle unsuccessful response code
           _showErrorDialog(response.data!.responseMessage);
@@ -406,7 +430,18 @@ class _LoginScreenState extends State<LoginScreen>
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
-                            onTap: _isLoading ? null : () {},
+                            onTap: _isLoading
+                                ? null
+                                : () {
+                                    // Navigate to forgot password flow
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ForgotPasswordEmailScreen(),
+                                      ),
+                                    );
+                                  },
                             child: Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 8.w,

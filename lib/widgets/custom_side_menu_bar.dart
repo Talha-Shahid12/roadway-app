@@ -1,6 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:roadway/Services/ApiCalls.dart';
+import 'package:roadway/Services/UserAuthStorage.dart';
 import 'package:roadway/routes/app_routes.dart';
 import 'package:roadway/screens/booking_history_screen.dart';
 // Add these classes at the bottom of your home_screen.dart file
@@ -20,7 +24,9 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
   int _selectedIndex = 0;
-
+  String? userName = 'Dear';
+  String userEmail = 'help@roadway.com';
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
@@ -29,6 +35,7 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
       vsync: this,
     );
 
+    _loadUserName();
     _slideAnimation = Tween<double>(
       begin: -1.0,
       end: 0.0,
@@ -52,6 +59,17 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserName() async {
+    final fullName = await UserAuthStorage.getUserName();
+    final firstName = fullName?.split(' ')[0];
+    final email = await UserAuthStorage.getUserEmail();
+    setState(() {
+      log("🚀 Loaded user email: $firstName");
+      userName = firstName ?? 'Dear';
+      userEmail = email ?? 'help@roadway.com';
+    });
   }
 
   @override
@@ -129,7 +147,7 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
           ),
           SizedBox(height: 16.h),
           Text(
-            'Hi, Talha! 👋',
+            'Hi, $userName! 👋',
             style: GoogleFonts.poppins(
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
@@ -138,7 +156,7 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
           ),
           SizedBox(height: 4.h),
           Text(
-            'talha@example.com',
+            userEmail,
             style: GoogleFonts.poppins(
               fontSize: 12.sp,
               fontWeight: FontWeight.w400,
@@ -438,26 +456,47 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
                     SizedBox(width: 12.w),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // Add your logout logic here
-                          _performLogout();
-                        },
+                        onPressed: _isLoading ? null : _performLogout,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[600],
+                          backgroundColor:
+                              _isLoading ? Colors.grey[400] : Colors.red[600],
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                         ),
-                        child: Text(
-                          'Logout',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 16.w,
+                                    height: 16.h,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    'Logging out...',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                'Logout',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -470,18 +509,89 @@ class _CustomSideMenuBarState extends State<CustomSideMenuBar>
     );
   }
 
-  void _performLogout() {
-    // Add your logout logic here
-    // For example: clear storage, navigate to login screen, etc.
-    print('🚪 User logged out');
+  Future<void> _performLogout() async {
+    // Check if widget is still mounted before starting
+    if (!mounted) return;
 
-    // Example navigation to login screen
-    // Navigator.pushNamedAndRemoveUntil(
-    //   context,
-    //   '/login',
-    //   (route) => false,
-    // );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('🚪 User logout initiated');
+      final email = await UserAuthStorage.getUserEmail();
+      final fcmUpdateResponse =
+          await ApiCalls.updateFCMToken(email: email!, fcmToken: '');
+      log("🔄 FCM token cleared on server: $fcmUpdateResponse");
+      if (fcmUpdateResponse['success'] == true) {
+        await UserAuthStorage.clearUserData();
+
+        // Check if widget is still mounted before navigation
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.login,
+            (route) => false,
+          );
+          print('🏠 Navigated to login screen');
+        }
+      } else {
+        if (mounted) {
+          _showErrorDialog(
+              'An error occurred during logout. Please try again.', context);
+        }
+      }
+    } catch (e) {
+      print('❌ Logout error: $e');
+      // Fallback navigation
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    } finally {
+      // Only call setState if widget is still mounted
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
+}
+
+// Show error dialog
+void _showErrorDialog(String message, BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.white,
+            size: 20.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: Colors.red[600],
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      margin: EdgeInsets.all(16.w),
+      duration: const Duration(seconds: 4),
+    ),
+  );
 }
 
 class MenuItemData {

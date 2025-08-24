@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "222772864220",
+    "project_id": "roadway-b0c4d",
+    "storage_bucket": "roadway-b0c4d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:222772864220:android:908d32237c334019c6c019",
+        "android_client_info": {
+          "package_name": "com.roadway"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBr-xabG2eceI7t-zgpM8YhMcF1fYpPGU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

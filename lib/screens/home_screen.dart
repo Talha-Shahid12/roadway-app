@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   String _getTimeBasedGreeting() {
-    final hour = 12; //DateTime.now().hour;
+    final hour = DateTime.now().hour;
 
     if (hour >= 5 && hour < 12) {
       return "Good Morning ☀️";

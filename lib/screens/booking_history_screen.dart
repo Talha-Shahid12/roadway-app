@@ -141,7 +141,7 @@ class _BookingsHistoryScreenState extends State<BookingsHistoryScreen> {
       });
 
       final result =
-          await ApiCalls.fetchBookingHistory('talhashahidarain1@gmail.com');
+          await ApiCalls.fetchBookingHistory('talhashahidarain@gmail.com');
 
       if (result['success']) {
         final data = result['data'];

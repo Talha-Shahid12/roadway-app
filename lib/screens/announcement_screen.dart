@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:roadway/Services/ApiCalls.dart';
+import 'package:roadway/Services/UserAuthStorage.dart';
 import 'package:roadway/screens/booking_history_screen.dart'; // Assuming this path is correct
 import 'package:roadway/screens/home_screen.dart'; // Import your HomeScreen
 
@@ -38,6 +40,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
   List<AnnouncementData> announcements = [];
   List<AnnouncementData> filteredAnnouncements = [];
   bool isLoading = false;
+  String? errorMessage; // Add error message state
 
   // Categories for filtering
   final List<String> categories = [
@@ -90,7 +93,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
     _searchController.addListener(_onSearchChanged);
     _searchFocusNode.addListener(_onSearchFocusChanged);
 
-    // Load sample data
     _loadAnnouncements();
   }
 
@@ -166,98 +168,73 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
     }
   }
 
-  void _loadAnnouncements() {
+  void _loadAnnouncements() async {
     setState(() {
       isLoading = true;
+      errorMessage = null;
     });
-    // Simulate API loading delay
-    Future.delayed(const Duration(milliseconds: 800), () {
-      // Sample data - replace with actual API call
-      announcements = [
-        AnnouncementData(
-          id: '1',
-          title: 'New Route: Karachi to Hyderabad',
-          content:
-              'We\'re excited to announce a new direct route from Karachi to Hyderabad with comfortable AC buses. Daily departures starting from 6:00 AM.',
-          operatorName: 'Faisal Movers',
-          category: 'Service Updates',
-          priority: AnnouncementPriority.high,
-          publishedDate: DateTime.now().subtract(const Duration(hours: 2)),
-          isRead: false,
-          imageUrl: null,
-        ),
-        AnnouncementData(
-          id: '2',
-          title: 'Route Maintenance Notice',
-          content:
-              'Due to road construction on M2 highway, there might be delays of 30-45 minutes for Lahore-Islamabad route on weekdays.',
-          operatorName: 'Daewoo Express',
-          category: 'Maintenance',
-          priority: AnnouncementPriority.medium,
-          publishedDate: DateTime.now().subtract(const Duration(hours: 5)),
-          isRead: true,
-        ),
-        AnnouncementData(
-          id: '3',
-          title: '🎉 Special Discount: 20% Off!',
-          content:
-              'Book your tickets now and get 20% discount on all routes. Offer valid until the end of this month. Use code: SAVE20',
-          operatorName: 'Skyways',
-          category: 'Promotions',
-          priority: AnnouncementPriority.high,
-          publishedDate: DateTime.now().subtract(const Duration(days: 1)),
-          isRead: false,
-        ),
-        AnnouncementData(
-          id: '4',
-          title: 'Enhanced Safety Protocols',
-          content:
-              'We have implemented new safety measures including regular sanitization, temperature checks, and mandatory masks for all passengers.',
-          operatorName: 'Bilal Travels',
-          category: 'Safety',
-          priority: AnnouncementPriority.medium,
-          publishedDate: DateTime.now().subtract(const Duration(days: 2)),
-          isRead: true,
-        ),
-        AnnouncementData(
-          id: '5',
-          title: 'Schedule Change: Morning Departures',
-          content:
-              'Starting next week, morning departure times for Karachi-Lahore route will be shifted 30 minutes earlier to avoid traffic congestion.',
-          operatorName: 'Faisal Movers',
-          category: 'Route Changes',
-          priority: AnnouncementPriority.low,
-          publishedDate: DateTime.now().subtract(const Duration(days: 3)),
-          isRead: false,
-        ),
-        AnnouncementData(
-          id: '6',
-          title: 'WiFi Service Now Available',
-          content:
-              'Enjoy complimentary high-speed WiFi on all our premium coaches. Stay connected throughout your journey.',
-          operatorName: 'Daewoo Express',
-          category: 'Service Updates',
-          priority: AnnouncementPriority.low,
-          publishedDate: DateTime.now().subtract(const Duration(days: 5)),
-          isRead: true,
-        ),
-      ];
-      // Sort by date (newest first) and then by priority
-      announcements.sort((a, b) {
-        int priorityComparison = b.priority.index.compareTo(a.priority.index);
-        if (priorityComparison != 0) return priorityComparison;
-        return b.publishedDate.compareTo(a.publishedDate);
-      });
-      filteredAnnouncements = List.from(announcements);
-      setState(() {
-        isLoading = false;
-      });
-      if (announcements.isNotEmpty) {
-        _animationController.forward();
+
+    try {
+      String? email = await UserAuthStorage.getUserEmail();
+
+      final response = await ApiCalls.fetchAnnouncements(email!);
+
+      if (response.success) {
+        // Convert API models to AnnouncementData - Show ALL announcements
+        final List<AnnouncementData> fetchedAnnouncements = response
+            .announcements
+            .map((apiModel) => apiModel.toAnnouncementData())
+            .toList();
+
+        // Sort by date (newest first) and then by priority
+        fetchedAnnouncements.sort((a, b) {
+          int priorityComparison = b.priority.index.compareTo(a.priority.index);
+          if (priorityComparison != 0) return priorityComparison;
+          return b.publishedDate.compareTo(a.publishedDate);
+        });
+
+        setState(() {
+          announcements = fetchedAnnouncements;
+          filteredAnnouncements = List.from(announcements);
+          isLoading = false;
+        });
+
+        if (announcements.isNotEmpty) {
+          _animationController.forward();
+        } else {
+          _emptyStateController.forward();
+        }
       } else {
+        setState(() {
+          errorMessage = response.message.isNotEmpty
+              ? response.message
+              : 'Failed to load announcements';
+          isLoading = false;
+        });
         _emptyStateController.forward();
       }
-    });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading announcements: ${e.toString()}';
+        isLoading = false;
+      });
+      _emptyStateController.forward();
+
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load announcements: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _loadAnnouncements,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -307,21 +284,31 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF6C63FF).withOpacity(0.1),
-                      const Color(0xFF9C88FF).withOpacity(0.1),
+                      (errorMessage != null
+                              ? Colors.red
+                              : const Color(0xFF6C63FF))
+                          .withOpacity(0.1),
+                      (errorMessage != null
+                              ? Colors.red
+                              : const Color(0xFF9C88FF))
+                          .withOpacity(0.1),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(60.r),
                 ),
                 child: Icon(
-                  Icons.campaign_rounded,
+                  errorMessage != null
+                      ? Icons.error_outline
+                      : Icons.campaign_rounded,
                   size: 64.sp,
-                  color: const Color(0xFF6C63FF),
+                  color: errorMessage != null
+                      ? Colors.red
+                      : const Color(0xFF6C63FF),
                 ),
               ),
               SizedBox(height: 24.h),
               Text(
-                "No Announcements",
+                errorMessage != null ? "Error Loading" : "No Announcements",
                 style: GoogleFonts.poppins(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w700,
@@ -331,7 +318,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
               ),
               SizedBox(height: 12.h),
               Text(
-                "There are no announcements to show right now. Check back later for updates from bus operators.",
+                errorMessage ??
+                    "There are no announcements to show right now. Check back later for updates from bus operators.",
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 13.sp,
@@ -343,7 +331,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
               ElevatedButton(
                 onPressed: _loadAnnouncements,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6C63FF),
+                  backgroundColor: errorMessage != null
+                      ? Colors.red
+                      : const Color(0xFF6C63FF),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding:
@@ -353,7 +343,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
                   ),
                 ),
                 child: Text(
-                  "Refresh",
+                  errorMessage != null ? "Retry" : "Refresh",
                   style: GoogleFonts.poppins(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -702,7 +692,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
                                   borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: Text(
-                                  "${filteredAnnouncements.where((a) => !a.isRead).length} new",
+                                  "${filteredAnnouncements.where((a) => !a.isRead).length} unread",
                                   style: GoogleFonts.poppins(
                                     fontSize: 10.sp,
                                     color: const Color(0xFF00C853),
@@ -744,24 +734,104 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
                                       announcement:
                                           filteredAnnouncements[index],
                                       searchQuery: _searchController.text,
-                                      onTap: () {
-                                        // Mark as read when tapped
-                                        setState(() {
-                                          filteredAnnouncements[index] =
-                                              filteredAnnouncements[index]
-                                                  .copyWith(isRead: true);
-                                          // Also update in main list
-                                          final mainIndex =
-                                              announcements.indexWhere((a) =>
-                                                  a.id ==
-                                                  filteredAnnouncements[index]
-                                                      .id);
-                                          if (mainIndex != -1) {
-                                            announcements[mainIndex] =
-                                                announcements[mainIndex]
-                                                    .copyWith(isRead: true);
+                                      onTap: () async {
+                                        final announcement =
+                                            filteredAnnouncements[index];
+
+                                        // Only mark as read if it's not already read
+                                        if (!announcement.isRead) {
+                                          // Show loading state immediately (optimistic update)
+                                          setState(() {
+                                            filteredAnnouncements[index] =
+                                                announcement.copyWith(
+                                                    isRead: true);
+                                            final mainIndex =
+                                                announcements.indexWhere((a) =>
+                                                    a.id == announcement.id);
+                                            if (mainIndex != -1) {
+                                              announcements[mainIndex] =
+                                                  announcements[mainIndex]
+                                                      .copyWith(isRead: true);
+                                            }
+                                          });
+
+                                          // Call API in background
+                                          try {
+                                            String? email =
+                                                await UserAuthStorage
+                                                    .getUserEmail();
+                                            String? token =
+                                                await UserAuthStorage
+                                                    .getAuthToken();
+
+                                            final success = await ApiCalls
+                                                .markAnnouncementAsReadAndUpdate(
+                                              announcementId: announcement.id,
+                                              token: token,
+                                              onSuccess: (message) {
+                                                // API call successful, UI already updated
+                                                print(
+                                                    '✅ Announcement marked as read: $message');
+                                              },
+                                              onError: (error) {
+                                                // Revert the UI change if API call failed
+                                                setState(() {
+                                                  filteredAnnouncements[index] =
+                                                      announcement.copyWith(
+                                                          isRead: false);
+                                                  final mainIndex =
+                                                      announcements.indexWhere(
+                                                          (a) =>
+                                                              a.id ==
+                                                              announcement.id);
+                                                  if (mainIndex != -1) {
+                                                    announcements[mainIndex] =
+                                                        announcements[mainIndex]
+                                                            .copyWith(
+                                                                isRead: false);
+                                                  }
+                                                });
+
+                                                // Show error message
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                          'Failed to mark as read: $error'),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      action: SnackBarAction(
+                                                        label: 'Retry',
+                                                        textColor: Colors.white,
+                                                        onPressed: () => {
+                                                          // User can tap again to retry
+                                                        },
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                            );
+                                          } catch (e) {
+                                            // Revert UI change on exception
+                                            setState(() {
+                                              filteredAnnouncements[index] =
+                                                  announcement.copyWith(
+                                                      isRead: false);
+                                              final mainIndex = announcements
+                                                  .indexWhere((a) =>
+                                                      a.id == announcement.id);
+                                              if (mainIndex != -1) {
+                                                announcements[mainIndex] =
+                                                    announcements[mainIndex]
+                                                        .copyWith(
+                                                            isRead: false);
+                                              }
+                                            });
                                           }
-                                        });
+                                        }
+
                                         // Navigate to detailed view
                                         _showAnnouncementDetails(
                                             filteredAnnouncements[index]);
@@ -1048,57 +1118,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
   }
 }
 
-// Data models
-enum AnnouncementPriority { high, medium, low }
-
-class AnnouncementData {
-  final String id;
-  final String title;
-  final String content;
-  final String operatorName;
-  final String category;
-  final AnnouncementPriority priority;
-  final DateTime publishedDate;
-  final bool isRead;
-  final String? imageUrl;
-
-  const AnnouncementData({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.operatorName,
-    required this.category,
-    required this.priority,
-    required this.publishedDate,
-    required this.isRead,
-    this.imageUrl,
-  });
-
-  AnnouncementData copyWith({
-    String? id,
-    String? title,
-    String? content,
-    String? operatorName,
-    String? category,
-    AnnouncementPriority? priority,
-    DateTime? publishedDate,
-    bool? isRead,
-    String? imageUrl,
-  }) {
-    return AnnouncementData(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      operatorName: operatorName ?? this.operatorName,
-      category: category ?? this.category,
-      priority: priority ?? this.priority,
-      publishedDate: publishedDate ?? this.publishedDate,
-      isRead: isRead ?? this.isRead,
-      imageUrl: imageUrl ?? this.imageUrl,
-    );
-  }
-}
-
 class AnnouncementCard extends StatelessWidget {
   final AnnouncementData announcement;
   final VoidCallback onTap;
@@ -1123,7 +1142,6 @@ class AnnouncementCard extends StatelessWidget {
     }
 
     final List<TextSpan> spans = [];
-    int currentMatchIndex = 0;
 
     // Split the text by the search query (case-insensitive)
     final RegExp exp = RegExp(lowerQuery, caseSensitive: false);
@@ -1203,16 +1221,17 @@ class AnnouncementCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: !announcement.isRead
-            ? Border.all(
-                color:
-                    _getPriorityColor(announcement.priority).withOpacity(0.3),
-                width: 1.5)
-            : null,
+        // Removed the border highlighting for unread announcements
+        border: announcement.isRead
+            ? null
+            : Border.all(
+                color: const Color.fromARGB(255, 220, 102, 102)!,
+                width: 1,
+              ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(announcement.isRead ? 0.05 : 0.08),
-            blurRadius: announcement.isRead ? 8 : 12,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
@@ -1236,7 +1255,7 @@ class AnnouncementCard extends StatelessWidget {
                 // Header row with unread indicator, category, and priority
                 Row(
                   children: [
-                    // Unread indicator
+                    // Unread indicator - only show if unread
                     if (!announcement.isRead)
                       Container(
                         width: 8.w,
@@ -1284,29 +1303,25 @@ class AnnouncementCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 12.h),
-                // Title
+                // Title - No different styling for read/unread
                 _buildHighlightedText(
                   announcement.title,
                   GoogleFonts.poppins(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
-                    color: announcement.isRead
-                        ? Colors.grey[700]
-                        : const Color(0xFF1A1A1A),
+                    color: const Color(0xFF1A1A1A), // Same color for all
                     height: 1.3,
                   ),
                 ),
                 SizedBox(height: 8.h),
-                // Content preview (first 2 lines)
+                // Content preview - No different styling for read/unread
                 _buildHighlightedText(
                   announcement.content.length > 100
                       ? '${announcement.content.substring(0, 100)}...'
                       : announcement.content,
                   GoogleFonts.poppins(
                     fontSize: 12.sp,
-                    color: announcement.isRead
-                        ? Colors.grey[500]
-                        : Colors.grey[600],
+                    color: Colors.grey[600], // Same color for all
                     height: 1.4,
                   ),
                 ),

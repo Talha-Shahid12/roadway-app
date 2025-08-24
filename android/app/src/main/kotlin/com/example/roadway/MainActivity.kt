@@ -1,4 +1,4 @@
-package com.example.roadway
+package com.roadway
 
 import io.flutter.embedding.android.FlutterActivity
 

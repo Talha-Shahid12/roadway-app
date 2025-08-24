@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:roadway/Services/UserAuthStorage.dart';
 import '../routes/app_routes.dart';
 
 class SimpleSplashScreen extends StatefulWidget {
@@ -12,8 +13,14 @@ class _SimpleSplashScreenState extends State<SimpleSplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    Timer(Duration(seconds: 3), () async {
+      if (await UserAuthStorage.isUserLoggedIn()) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        return;
+      } else {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        return;
+      }
     });
   }
 
