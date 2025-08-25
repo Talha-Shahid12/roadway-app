@@ -12,11 +12,11 @@ Future<void> main() async {
 
   await Firebase.initializeApp(
       options: FirebaseOptions(
-    apiKey: 'AIzaSyDBr-xabG2eceI7t-zgpM8YhMcF1fYpPGU',
-    appId: '1:222772864220:android:908d32237c334019c6c019',
-    messagingSenderId: '222772864220',
-    projectId: 'roadway-b0c4d',
-    storageBucket: 'roadway-b0c4d.firebasestorage.app',
+    apiKey: '',
+    appId: '',
+    messagingSenderId: '',
+    projectId: '',
+    storageBucket: '',
   ));
 
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
